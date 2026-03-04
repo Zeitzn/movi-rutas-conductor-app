@@ -6,6 +6,7 @@ import '../models/route_point.dart';
 import '../models/route_status.dart';
 import '../repositories/route_repository.dart';
 import '../services/location_service.dart';
+import '../services/background_location_service.dart';
 import 'route_tracking_event.dart';
 import 'route_tracking_state.dart';
 
@@ -55,6 +56,9 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
 
       _currentRoute = await _routeRepository.createRoute(newRoute);
 
+      // Iniciar notificación de foreground
+      await BackgroundLocationService.startForegroundNotification();
+
       // Start location tracking
       _locationSubscription = _locationService.getLocationStream().listen(
         (position) {
@@ -98,6 +102,12 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       );
 
       _currentRoute = await _routeRepository.updateRoute(updatedRoute);
+      // Actualizar notificación de foreground
+      await BackgroundLocationService.updateNotificationStatus(
+        RouteStatus.paused,
+        _currentRoute!.points.length,
+      );
+
       emit(RouteTrackingPaused(_currentRoute!));
     } catch (e) {
       emit(RouteTrackingError('Failed to pause route: $e'));
@@ -166,6 +176,9 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       );
 
       _currentRoute = await _routeRepository.updateRoute(updatedRoute);
+      // Detener notificación de foreground
+      await BackgroundLocationService.stopForegroundNotification();
+
       emit(RouteTrackingCompleted(_currentRoute!));
     } catch (e) {
       emit(RouteTrackingError('Failed to end route: $e'));
@@ -207,6 +220,12 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
 
       // Emit current state with updated route
       if (state is RouteTrackingInProgress) {
+        // Actualizar notificación con nuevo punto
+        await BackgroundLocationService.updateNotificationStatus(
+          RouteStatus.inProgress,
+          _currentRoute!.points.length,
+        );
+
         emit(RouteTrackingInProgress(_currentRoute!));
       }
     } catch (e) {

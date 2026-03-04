@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../models/route_point.dart';
+import '../models/route_status.dart';
 
 // This callback function is executed by WorkManager
 @pragma('vm:entry-point')
@@ -38,6 +40,11 @@ void callbackDispatcher() {
 class BackgroundLocationService {
   static const String _taskName = AppConstants.backgroundTaskName;
   bool _isInitialized = false;
+  static const MethodChannel _channel = MethodChannel(
+    'com.example.movi_rutas_example/notifications',
+  );
+  static RouteStatus? _currentRouteStatus;
+  static int _currentPointsCount = 0;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -209,6 +216,40 @@ class BackgroundLocationService {
       await stopBackgroundTracking();
     } catch (e) {
       throw DatabaseFailure('Failed to dispose background service: $e');
+    }
+  }
+
+  // Métodos para actualizar notificaciones desde Flutter
+  static Future<void> updateNotificationStatus(
+    RouteStatus status,
+    int pointsCount,
+  ) async {
+    try {
+      _currentRouteStatus = status;
+      _currentPointsCount = pointsCount;
+
+      await _channel.invokeMethod('updateNotification', {
+        'status': status.name,
+        'pointsCount': pointsCount,
+      });
+    } catch (e) {
+      print('Error updating notification: $e');
+    }
+  }
+
+  static Future<void> stopForegroundNotification() async {
+    try {
+      await _channel.invokeMethod('stopNotification');
+    } catch (e) {
+      print('Error stopping notification: $e');
+    }
+  }
+
+  static Future<void> startForegroundNotification() async {
+    try {
+      await _channel.invokeMethod('startNotification');
+    } catch (e) {
+      print('Error starting notification: $e');
     }
   }
 }

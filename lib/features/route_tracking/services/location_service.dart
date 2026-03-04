@@ -49,6 +49,48 @@ class LocationService {
     }
   }
 
+  Future<bool> isLocationServiceEnabled() async {
+    try {
+      return await Geolocator.isLocationServiceEnabled();
+    } catch (e) {
+      throw LocationFailure(
+        'Failed to check if location service is enabled: $e',
+      );
+    }
+  }
+
+  Future<void> requestLocationServiceEnable() async {
+    try {
+      final isEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!isEnabled) {
+        // Open location settings for user to enable GPS
+        await Geolocator.openLocationSettings();
+      }
+    } catch (e) {
+      throw LocationFailure('Failed to request location service enable: $e');
+    }
+  }
+
+  Future<bool> checkAndRequestLocationService() async {
+    try {
+      final isEnabled = await isLocationServiceEnabled();
+      if (!isEnabled) {
+        // Return false to indicate GPS is disabled
+        return false;
+      }
+
+      // Check permissions as well
+      await hasLocationPermission();
+      return true;
+    } catch (e) {
+      if (e is LocationFailure && e.message.contains('disabled')) {
+        // GPS is disabled
+        return false;
+      }
+      throw LocationFailure('Failed to check location service: $e');
+    }
+  }
+
   Future<Position> getCurrentLocation() async {
     try {
       await hasLocationPermission();
@@ -106,16 +148,6 @@ class LocationService {
       _positionStreamSubscription = null;
     } catch (e) {
       throw LocationFailure('Failed to stop location updates: $e');
-    }
-  }
-
-  Future<bool> isLocationServiceEnabled() async {
-    try {
-      return await Geolocator.isLocationServiceEnabled();
-    } catch (e) {
-      throw LocationFailure(
-        'Failed to check if location service is enabled: $e',
-      );
     }
   }
 

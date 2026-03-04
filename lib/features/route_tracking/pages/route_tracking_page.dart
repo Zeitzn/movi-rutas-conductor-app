@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/route_tracking_bloc.dart';
 import '../bloc/route_tracking_event.dart';
 import '../bloc/route_tracking_state.dart';
+import '../services/location_service.dart';
+import '../widgets/gps_dialogs.dart';
 import '../../../core/constants/app_constants.dart';
 
 class RouteTrackingPage extends StatelessWidget {
@@ -257,23 +259,79 @@ class RouteTrackingPage extends StatelessWidget {
               color: Theme.of(context).colorScheme.error,
             ),
             const SizedBox(height: 16),
-            Text('Error', style: Theme.of(context).textTheme.headlineMedium),
+            Text(
+              _getErrorMessage(state.message),
+              style: Theme.of(context).textTheme.headlineMedium,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
             Text(
-              state.message,
+              _getErrorDescription(state.message),
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => _startNewRoute(context),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _retryStartRoute(context),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Reintentar'),
+                ),
+                if (state.message.contains('GPS') ||
+                    state.message.contains('disabled'))
+                  TextButton.icon(
+                    onPressed: () => _openLocationSettings(context),
+                    icon: const Icon(Icons.settings),
+                    label: const Text('Configurar'),
+                  ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _getErrorMessage(String message) {
+    if (message.contains('GPS') || message.contains('disabled')) {
+      return 'GPS Desactivado';
+    } else if (message.contains('permission')) {
+      return 'Permisos Requeridos';
+    } else {
+      return 'Error';
+    }
+  }
+
+  String _getErrorDescription(String message) {
+    if (message.contains('GPS') || message.contains('disabled')) {
+      return 'El GPS está desactivado. Actívalo para usar el seguimiento de rutas.';
+    } else if (message.contains('permission')) {
+      return 'La aplicación necesita permisos de ubicación para funcionar correctamente.';
+    } else {
+      return message;
+    }
+  }
+
+  Future<void> _retryStartRoute(BuildContext context) async {
+    _startNewRoute(context);
+  }
+
+  Future<void> _openLocationSettings(BuildContext context) async {
+    try {
+      final locationService = LocationService();
+      await locationService.openLocationSettings();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al abrir configuración: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildRouteDetails(BuildContext context, dynamic route) {
@@ -461,7 +519,7 @@ class RouteTrackingPage extends StatelessWidget {
     );
   }
 
-  void _startNewRoute(BuildContext context) {
+  Future<void> _startNewRoute(BuildContext context) async {
     context.read<RouteTrackingBloc>().add(const StartRoute('driver_001'));
   }
 
