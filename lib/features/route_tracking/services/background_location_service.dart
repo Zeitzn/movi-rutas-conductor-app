@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../models/route_point.dart';
@@ -155,25 +157,30 @@ class BackgroundLocationService {
 
   Future<void> sendLocationToWebSocket(Position position) async {
     try {
-      // This is where you would send location to your WebSocket server
-      // For now, we'll just log it
       final locationData = {
-        'latitude': position.latitude,
-        'longitude': position.longitude,
+        'remitente': AppConstants.websocketRemitente,
+        'contenido':
+            'Coordenadas GPS: ${position.latitude}, ${position.longitude}',
+        'latitud': position.latitude,
+        'longitud': position.longitude,
         'timestamp': DateTime.now().toIso8601String(),
-        'speed': position.speed,
-        'accuracy': position.accuracy,
+        'velocidad': position.speed,
+        'precision': position.accuracy,
       };
 
-      // Note: In production, use a proper logging framework
-      print('Sending location to WebSocket: $locationData');
+      final channel = WebSocketChannel.connect(
+        Uri.parse(AppConstants.websocketUrl),
+      );
 
-      // TODO: Implement actual WebSocket connection
-      // final websocket = await WebSocket.connect(AppConstants.websocketUrl);
-      // websocket.add(jsonEncode(locationData));
-      // await websocket.close();
+      await channel.ready;
+
+      channel.sink.add(jsonEncode(locationData));
+
+      await channel.sink.close();
+
+      print('Location sent to WebSocket: $locationData');
     } catch (e) {
-      throw NetworkFailure('Failed to send location to WebSocket: $e');
+      print('Error sending location to WebSocket: $e');
     }
   }
 

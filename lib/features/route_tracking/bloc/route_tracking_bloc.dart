@@ -7,12 +7,14 @@ import '../models/route_status.dart';
 import '../repositories/route_repository.dart';
 import '../services/location_service.dart';
 import '../services/background_location_service.dart';
+import '../services/websocket_service.dart';
 import 'route_tracking_event.dart';
 import 'route_tracking_state.dart';
 
 class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
   final RouteRepository _routeRepository;
   final LocationService _locationService;
+  final WebSocketService _webSocketService = WebSocketService();
 
   StreamSubscription<Position>? _locationSubscription;
   Route? _currentRoute;
@@ -58,6 +60,14 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
 
       // Iniciar notificación de foreground
       await BackgroundLocationService.startForegroundNotification();
+
+      // Conectar al WebSocket
+      try {
+        await _webSocketService.connect();
+        await _webSocketService.subscribe();
+      } catch (e) {
+        print('WebSocket connection failed: $e');
+      }
 
       // Start location tracking
       _locationSubscription = _locationService.getLocationStream().listen(
@@ -179,6 +189,9 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       // Detener notificación de foreground
       await BackgroundLocationService.stopForegroundNotification();
 
+      // Desconectar del WebSocket
+      await _webSocketService.disconnect();
+
       emit(RouteTrackingCompleted(_currentRoute!));
     } catch (e) {
       emit(RouteTrackingError('Failed to end route: $e'));
@@ -217,6 +230,15 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       );
 
       _currentRoute = await _routeRepository.updateRoute(updatedRoute);
+
+      // Enviar ubicación al WebSocket
+      await _webSocketService.sendLocation(
+        latitude: event.routePoint.latitude,
+        longitude: event.routePoint.longitude,
+        speed: event.routePoint.speed ?? 0.0,
+        accuracy: event.routePoint.accuracy ?? 0.0,
+        timestamp: event.routePoint.timestamp,
+      );
 
       // Emit current state with updated route
       if (state is RouteTrackingInProgress) {
