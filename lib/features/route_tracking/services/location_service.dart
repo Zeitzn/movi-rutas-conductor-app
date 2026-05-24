@@ -1,21 +1,16 @@
-import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 
 class LocationService {
-  StreamSubscription<Position>? _positionStreamSubscription;
-
   Future<bool> hasLocationPermission() async {
     try {
-      // Check if location services are enabled
       final isLocationEnabled = await Geolocator.isLocationServiceEnabled();
       if (!isLocationEnabled) {
         throw const LocationFailure('Location services are disabled');
       }
 
-      // Check location permissions
       LocationPermission permission = await Geolocator.checkPermission();
 
       if (permission == LocationPermission.denied) {
@@ -31,13 +26,8 @@ class LocationService {
         );
       }
 
-      // Check background location permission for Android
       if (permission == LocationPermission.whileInUse) {
-        final backgroundPermission = await Permission.locationAlways.request();
-        if (!backgroundPermission.isGranted) {
-          // Continue with whileInUse permission but warn user
-          // Note: In production, use a proper logging framework
-        }
+        await Permission.locationAlways.request();
       }
 
       return true;
@@ -46,65 +36,6 @@ class LocationService {
         rethrow;
       }
       throw LocationFailure('Failed to check location permissions: $e');
-    }
-  }
-
-  Future<bool> isLocationServiceEnabled() async {
-    try {
-      return await Geolocator.isLocationServiceEnabled();
-    } catch (e) {
-      throw LocationFailure(
-        'Failed to check if location service is enabled: $e',
-      );
-    }
-  }
-
-  Future<void> requestLocationServiceEnable() async {
-    try {
-      final isEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!isEnabled) {
-        // Open location settings for user to enable GPS
-        await Geolocator.openLocationSettings();
-      }
-    } catch (e) {
-      throw LocationFailure('Failed to request location service enable: $e');
-    }
-  }
-
-  Future<bool> checkAndRequestLocationService() async {
-    try {
-      final isEnabled = await isLocationServiceEnabled();
-      if (!isEnabled) {
-        // Return false to indicate GPS is disabled
-        return false;
-      }
-
-      // Check permissions as well
-      await hasLocationPermission();
-      return true;
-    } catch (e) {
-      if (e is LocationFailure && e.message.contains('disabled')) {
-        // GPS is disabled
-        return false;
-      }
-      throw LocationFailure('Failed to check location service: $e');
-    }
-  }
-
-  Future<Position> getCurrentLocation() async {
-    try {
-      await hasLocationPermission();
-
-      return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
-    } catch (e) {
-      if (e is Failure) {
-        rethrow;
-      }
-      throw LocationFailure('Failed to get current location: $e');
     }
   }
 
@@ -121,54 +52,11 @@ class LocationService {
     }
   }
 
-  Future<void> startLocationUpdates({
-    required Function(Position) onLocationUpdate,
-    Function(dynamic)? onError,
-  }) async {
-    try {
-      await hasLocationPermission();
-
-      _positionStreamSubscription = getLocationStream().listen(
-        onLocationUpdate,
-        onError:
-            onError ??
-            (error) => throw LocationFailure('Location update error: $error'),
-      );
-    } catch (e) {
-      if (e is Failure) {
-        rethrow;
-      }
-      throw LocationFailure('Failed to start location updates: $e');
-    }
-  }
-
-  Future<void> stopLocationUpdates() async {
-    try {
-      await _positionStreamSubscription?.cancel();
-      _positionStreamSubscription = null;
-    } catch (e) {
-      throw LocationFailure('Failed to stop location updates: $e');
-    }
-  }
-
   Future<void> openLocationSettings() async {
     try {
       await Geolocator.openLocationSettings();
     } catch (e) {
       throw LocationFailure('Failed to open location settings: $e');
     }
-  }
-
-  Future<void> openAppSettings() async {
-    try {
-      await Geolocator.openAppSettings();
-    } catch (e) {
-      throw LocationFailure('Failed to open app settings: $e');
-    }
-  }
-
-  void dispose() {
-    _positionStreamSubscription?.cancel();
-    _positionStreamSubscription = null;
   }
 }

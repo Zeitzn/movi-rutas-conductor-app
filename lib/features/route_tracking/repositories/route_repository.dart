@@ -112,16 +112,4 @@ class InMemoryRouteRepository implements RouteRepository {
       throw DatabaseFailure('Failed to clear all routes: $e');
     }
   }
-
-  // Helper methods for testing and debugging
-  int get routeCount => _routes.length;
-  int get driverCount => _driverRoutes.length;
-
-  List<String> getDriverIds() {
-    return _driverRoutes.keys.toList();
-  }
-
-  List<String> getRouteIds() {
-    return _routes.keys.toList();
-  }
 }

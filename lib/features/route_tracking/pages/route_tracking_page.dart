@@ -4,7 +4,6 @@ import '../bloc/route_tracking_bloc.dart';
 import '../bloc/route_tracking_event.dart';
 import '../bloc/route_tracking_state.dart';
 import '../services/location_service.dart';
-import '../widgets/gps_dialogs.dart';
 import '../../../core/constants/app_constants.dart';
 
 class RouteTrackingPage extends StatelessWidget {
