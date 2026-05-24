@@ -15,7 +15,7 @@ class AppConstants {
   static const String notificationChannelDescription =
       'Tracks your route in real-time';
 
-  static const String websocketUrl = 'ws://192.168.18.39:8080/channels';
+  static const String websocketUrl = 'ws://localhost:8080/channels';
   static const int websocketReconnectDelay = 5000; // 5 seconds
   static const String websocketTopic = '/topic/channel/PE/AYAC/001';
   static const String websocketDestination = '/app/channel/PE/AYAC/001';
@@ -26,6 +26,13 @@ class AppConstants {
   // Data storage
   static const String routesBoxName = 'routes';
   static const String settingsBoxName = 'settings';
+
+  // Auth settings
+  static const String authHost = '';
+  static const String authTokenEndpoint = '';
+  static const String authClientId = '';
+  static const String authClientSecret = '';
+  static const String authGrantType = '';
 
   // UI constants
   static const double defaultPadding = 16.0;

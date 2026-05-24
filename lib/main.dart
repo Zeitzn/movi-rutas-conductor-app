@@ -1,31 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:workmanager/workmanager.dart';
+
+import 'core/constants/app_constants.dart';
+
 import 'features/route_tracking/bloc/route_tracking_bloc.dart';
 import 'features/route_tracking/pages/route_tracking_page.dart';
 import 'features/route_tracking/repositories/route_repository.dart';
 import 'features/route_tracking/services/location_service.dart';
 import 'features/route_tracking/services/background_location_service.dart';
-import 'core/constants/app_constants.dart';
+
+import 'features/auth/bloc/auth_bloc.dart';
+import 'features/auth/bloc/auth_state.dart';
+import 'features/auth/pages/login_page.dart';
+import 'features/auth/repositories/auth_repository.dart';
+import 'features/auth/services/auth_service.dart';
 
 // WorkManager callback function
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
-      // Initialize background location service
       final backgroundService = BackgroundLocationService();
       await backgroundService.initializeBackgroundTask();
 
-      // Get current location
       final position = await backgroundService
           .getCurrentLocationForBackground();
 
       if (position != null) {
-        // Save location point
         await backgroundService.saveLocationPoint(position);
-
-        // Send to WebSocket (if needed)
         await backgroundService.sendLocationToWebSocket(position);
       }
 
@@ -39,7 +42,6 @@ void callbackDispatcher() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize WorkManager for background tasks
   await Workmanager().initialize(callbackDispatcher);
 
   runApp(const MoviRutasApp());
@@ -58,6 +60,12 @@ class MoviRutasApp extends StatelessWidget {
         RepositoryProvider<LocationService>(
           create: (context) => LocationService(),
         ),
+        RepositoryProvider<IAuthRepository>(
+          create: (context) => InMemoryAuthRepository(),
+        ),
+        RepositoryProvider<AuthService>(
+          create: (context) => AuthService(),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -65,6 +73,12 @@ class MoviRutasApp extends StatelessWidget {
             create: (context) => RouteTrackingBloc(
               routeRepository: context.read<RouteRepository>(),
               locationService: context.read<LocationService>(),
+            ),
+          ),
+          BlocProvider<AuthBloc>(
+            create: (context) => AuthBloc(
+              authRepository: context.read<IAuthRepository>(),
+              authService: context.read<AuthService>(),
             ),
           ),
         ],
@@ -97,11 +111,17 @@ class MoviRutasApp extends StatelessWidget {
               ),
             ),
           ),
-          home: const RouteTrackingPage(),
+          home: BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              if (state is AuthAuthenticated) {
+                return const RouteTrackingPage();
+              }
+              return const LoginPage();
+            },
+          ),
           debugShowCheckedModeBanner: false,
         ),
       ),
     );
   }
 }
-
