@@ -15,7 +15,6 @@ class AppConstants {
   static const String notificationChannelDescription =
       'Tracks your route in real-time';
 
-  // WebSocket settings (based on prueba-websocket.html)
   static const String websocketUrl = 'ws://192.168.18.39:8080/channels';
   static const int websocketReconnectDelay = 5000; // 5 seconds
   static const String websocketTopic = '/topic/channel/PE/AYAC/001';
@@ -23,15 +22,6 @@ class AppConstants {
 
   // WebSocket message format for GPS coordinates
   static const String websocketRemitente = 'conductor_app';
-  static const Map<String, String> websocketMessageFields = {
-    'remitente': 'remitente',
-    'contenido': 'contenido',
-    'latitud': 'latitud',
-    'longitud': 'longitud',
-    'timestamp': 'timestamp',
-    'velocidad': 'velocidad',
-    'precision': 'precision',
-  };
 
   // Data storage
   static const String routesBoxName = 'routes';

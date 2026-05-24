@@ -86,13 +86,15 @@ class WebSocketService {
     DateTime? timestamp,
   }) async {
     final message = {
-      'remitente': AppConstants.websocketRemitente,
-      'contenido': 'Coordenadas GPS: $latitude, $longitude',
-      'latitud': latitude,
-      'longitud': longitude,
-      'timestamp': (timestamp ?? DateTime.now()).toIso8601String(),
-      'velocidad': speed,
-      'precision': accuracy,
+      'sender': AppConstants.websocketRemitente,
+        'numberPlate': 'ABC-123',// TODO: Obtener número de placa
+        'content':
+            'Coordenadas GPS: ${latitude}, ${longitude}',
+        'latitude': latitude,
+        'longitude': longitude,
+        'timestamp': DateTime.now().toIso8601String(),
+        'speed': speed,
+        'accuracy': accuracy,
     };
 
     if (_isConnected && _stompClient != null) {

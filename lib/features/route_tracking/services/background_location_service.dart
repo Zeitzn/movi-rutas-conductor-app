@@ -158,14 +158,15 @@ class BackgroundLocationService {
   Future<void> sendLocationToWebSocket(Position position) async {
     try {
       final locationData = {
-        'remitente': AppConstants.websocketRemitente,
-        'contenido':
+        'sender': AppConstants.websocketRemitente,
+        'numberPlate': 'ABC-123',// TODO: Obtener número de placa
+        'content':
             'Coordenadas GPS: ${position.latitude}, ${position.longitude}',
-        'latitud': position.latitude,
-        'longitud': position.longitude,
+        'latitude': position.latitude,
+        'longitude': position.longitude,
         'timestamp': DateTime.now().toIso8601String(),
-        'velocidad': position.speed,
-        'precision': position.accuracy,
+        'speed': position.speed,
+        'accuracy': position.accuracy,
       };
 
       final channel = WebSocketChannel.connect(
