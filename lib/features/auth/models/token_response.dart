@@ -10,6 +10,7 @@ class TokenResponse extends Equatable {
   final String sessionState;
   final String scope;
   final DateTime issuedAt;
+  final String? username;
 
   TokenResponse({
     required this.accessToken,
@@ -20,6 +21,7 @@ class TokenResponse extends Equatable {
     this.notBeforePolicy = 0,
     this.sessionState = '',
     this.scope = '',
+    this.username,
     DateTime? issuedAt,
   }) : issuedAt = issuedAt ?? DateTime.now();
 
@@ -46,6 +48,7 @@ class TokenResponse extends Equatable {
     int? notBeforePolicy,
     String? sessionState,
     String? scope,
+    String? username,
     DateTime? issuedAt,
   }) {
     return TokenResponse(
@@ -57,6 +60,7 @@ class TokenResponse extends Equatable {
       notBeforePolicy: notBeforePolicy ?? this.notBeforePolicy,
       sessionState: sessionState ?? this.sessionState,
       scope: scope ?? this.scope,
+      username: username ?? this.username,
       issuedAt: issuedAt ?? this.issuedAt,
     );
   }
@@ -71,6 +75,7 @@ class TokenResponse extends Equatable {
       'not-before-policy': notBeforePolicy,
       'session_state': sessionState,
       'scope': scope,
+      'username': username,
       'issued_at': issuedAt.toIso8601String(),
     };
   }
@@ -85,6 +90,7 @@ class TokenResponse extends Equatable {
       notBeforePolicy: (json['not-before-policy'] as num?)?.toInt() ?? 0,
       sessionState: json['session_state'] as String? ?? '',
       scope: json['scope'] as String? ?? '',
+      username: json['username'] as String?,
       issuedAt: json['issued_at'] != null
           ? DateTime.parse(json['issued_at'] as String)
           : null,
@@ -101,6 +107,7 @@ class TokenResponse extends Equatable {
     notBeforePolicy,
     sessionState,
     scope,
+    username,
     issuedAt,
   ];
 

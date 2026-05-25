@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../auth/bloc/auth_bloc.dart';
+import '../../auth/bloc/auth_event.dart';
+import '../../auth/bloc/auth_state.dart';
 import '../bloc/route_tracking_bloc.dart';
 import '../bloc/route_tracking_event.dart';
 import '../bloc/route_tracking_state.dart';
@@ -11,18 +14,30 @@ class RouteTrackingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final username = authState is AuthAuthenticated
+        ? authState.token.username?.toUpperCase() ?? 'Usuario'
+        : 'Iniciar sesión';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppConstants.appName),
+        title: Text(username),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Cerrar sesión',
+            onPressed: () =>
+                context.read<AuthBloc>().add(const LogoutRequested()),
+          ),
+        ],
       ),
       body: BlocBuilder<RouteTrackingBloc, RouteTrackingState>(
         builder: (context, state) {
           return _buildBody(context, state);
         },
       ),
-      floatingActionButton: _buildFloatingActionButton(context),
     );
   }
 
@@ -500,21 +515,6 @@ class RouteTrackingPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget? _buildFloatingActionButton(BuildContext context) {
-    return BlocBuilder<RouteTrackingBloc, RouteTrackingState>(
-      builder: (context, state) {
-        if (state is RouteTrackingInitial || state is RouteTrackingError) {
-          return FloatingActionButton.extended(
-            onPressed: () => _startNewRoute(context),
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Iniciar Ruta'),
-          );
-        }
-        return const SizedBox.shrink();
-      },
     );
   }
 

@@ -63,8 +63,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
       );
 
-      await _authRepository.saveToken(token);
-      emit(AuthAuthenticated(token));
+      final tokenWithUser = token.copyWith(username: event.username);
+      await _authRepository.saveToken(tokenWithUser);
+      emit(AuthAuthenticated(tokenWithUser));
     } catch (e) {
       final message = e.toString().replaceFirst('Exception: ', '');
       emit(AuthError(message));
