@@ -71,6 +71,10 @@ class _LoginFormState extends State<_LoginForm> {
       builder: (context, state) {
         final isLoading = state is AuthLoading;
 
+        if (state is AuthInitial) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         return SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.defaultPadding),
           child: Form(

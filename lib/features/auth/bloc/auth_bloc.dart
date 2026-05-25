@@ -18,21 +18,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required AuthService authService,
   }) : _authRepository = authRepository,
        _authService = authService,
-       super(_initialState(authRepository)) {
+       super(const AuthInitial()) {
     on<LoginSubmitted>(_onLoginSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
     on<CheckAuthStatus>(_onCheckAuthStatus);
     on<RefreshTokenRequested>(_onRefreshTokenRequested);
-  }
-
-  static AuthState _initialState(IAuthRepository authRepository) {
-    final token = authRepository.getToken();
-    if (token == null) return const AuthUnauthenticated();
-    if (!token.canRefresh) {
-      authRepository.clearToken();
-      return const AuthUnauthenticated();
-    }
-    return AuthAuthenticated(token);
   }
 
   @override
@@ -52,8 +42,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   void _startRefreshTimer(TokenResponse token) {
     _refreshTimer?.cancel();
 
-    // Refrescar al 80% del tiempo de vida del access_token
-    final refreshIn = (token.accessTokenRemainingSeconds * 0.8).round().clamp(1, 300);
+    final refreshIn = (token.accessTokenRemainingSeconds * 0.8)
+        .round()
+        .clamp(1, 300);
 
     _refreshTimer = Timer(Duration(seconds: refreshIn), () {
       add(const RefreshTokenRequested());
@@ -80,25 +71,42 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  Future<void> _onCheckAuthStatus(
+    CheckAuthStatus event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final token = await _authRepository.getToken();
+      if (token == null || !token.canRefresh) {
+        if (token != null) await _authRepository.clearToken();
+        emit(const AuthUnauthenticated());
+        return;
+      }
+      emit(AuthAuthenticated(token));
+    } catch (_) {
+      emit(const AuthUnauthenticated());
+    }
+  }
+
   Future<void> _onRefreshTokenRequested(
     RefreshTokenRequested event,
     Emitter<AuthState> emit,
   ) async {
-    final currentToken = _authRepository.getToken();
-    if (currentToken == null || !currentToken.canRefresh) {
-      await _authRepository.clearToken();
-      emit(const AuthUnauthenticated());
-      return;
-    }
-
     try {
+      final currentToken = await _authRepository.getToken();
+      if (currentToken == null || !currentToken.canRefresh) {
+        await _authRepository.clearToken();
+        emit(const AuthUnauthenticated());
+        return;
+      }
+
       final newToken = await _authService.refreshToken(
         currentToken.refreshToken,
       );
 
       await _authRepository.saveToken(newToken);
       emit(AuthAuthenticated(newToken));
-    } catch (e) {
+    } catch (_) {
       await _authRepository.clearToken();
       emit(const AuthUnauthenticated());
     }
@@ -112,19 +120,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _refreshTimer = null;
     await _authRepository.clearToken();
     emit(const AuthUnauthenticated());
-  }
-
-  void _onCheckAuthStatus(
-    CheckAuthStatus event,
-    Emitter<AuthState> emit,
-  ) {
-    final token = _authRepository.getToken();
-    if (token == null || !token.canRefresh) {
-      _authRepository.clearToken();
-      emit(const AuthUnauthenticated());
-      return;
-    }
-    emit(AuthAuthenticated(token));
   }
 
   @override

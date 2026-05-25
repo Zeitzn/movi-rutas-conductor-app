@@ -11,6 +11,7 @@ import 'features/route_tracking/services/location_service.dart';
 import 'features/route_tracking/services/background_location_service.dart';
 
 import 'features/auth/bloc/auth_bloc.dart';
+import 'features/auth/bloc/auth_event.dart';
 import 'features/auth/bloc/auth_state.dart';
 import 'features/auth/pages/login_page.dart';
 import 'features/auth/repositories/auth_repository.dart';
@@ -61,7 +62,7 @@ class MoviRutasApp extends StatelessWidget {
           create: (context) => LocationService(),
         ),
         RepositoryProvider<IAuthRepository>(
-          create: (context) => InMemoryAuthRepository(),
+          create: (context) => SharedPrefsAuthRepository(),
         ),
         RepositoryProvider<AuthService>(
           create: (context) => AuthService(),
@@ -79,7 +80,7 @@ class MoviRutasApp extends StatelessWidget {
             create: (context) => AuthBloc(
               authRepository: context.read<IAuthRepository>(),
               authService: context.read<AuthService>(),
-            ),
+            )..add(const CheckAuthStatus()),
           ),
         ],
         child: MaterialApp(
