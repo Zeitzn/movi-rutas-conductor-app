@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import '../../../core/constants/app_constants.dart';
 
@@ -7,6 +8,7 @@ class WebSocketService {
   StompClient? _stompClient;
   bool _isConnected = false;
   final List<Map<String, dynamic>> _messageQueue = [];
+  final FlutterRingtonePlayer _ringtonePlayer = FlutterRingtonePlayer();
 
   bool get isConnected => _isConnected;
 
@@ -105,6 +107,7 @@ class WebSocketService {
           headers: {'content-type': 'application/json'},
         );
         print('📤 Location sent via STOMP: $message');
+        _ringtonePlayer.playNotification();
       } catch (e) {
         print('Error sending location to STOMP: $e');
         _messageQueue.add(message);
@@ -126,6 +129,7 @@ class WebSocketService {
           headers: {'content-type': 'application/json'},
         );
         print('📤 Flushed queued message: $message');
+        _ringtonePlayer.playNotification();
       } catch (e) {
         print('Error flushing message queue: $e');
       }
