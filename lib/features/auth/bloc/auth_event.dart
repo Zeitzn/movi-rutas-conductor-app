@@ -27,3 +27,7 @@ class LogoutRequested extends AuthEvent {
 class CheckAuthStatus extends AuthEvent {
   const CheckAuthStatus();
 }
+
+class RefreshTokenRequested extends AuthEvent {
+  const RefreshTokenRequested();
+}

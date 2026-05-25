@@ -15,9 +15,7 @@ class AuthService {
       final uri = Uri.parse(
         '${AppConstants.authHost}${AppConstants.authTokenEndpoint}',
       );
-      print('AuthService: Sending login request to $uri');
-      print('AuthService: Username: $username');
-      print('AuthService: Password: $password');
+
       final response = await http.post(
         uri,
         headers: {
@@ -32,20 +30,51 @@ class AuthService {
         },
       );
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        return TokenResponse.fromJson(json);
-      } else if (response.statusCode == 401) {
-        throw const ServerFailure('Usuario o contraseña incorrectos');
-      } else {
-        throw ServerFailure(
-          'Error del servidor: ${response.statusCode}',
-        );
-      }
+      return _handleResponse(response);
     } on Failure {
       rethrow;
     } catch (e) {
       throw NetworkFailure('Error de conexión: $e');
+    }
+  }
+
+  Future<TokenResponse> refreshToken(String refreshToken) async {
+    try {
+      final uri = Uri.parse(
+        '${AppConstants.authHost}${AppConstants.authTokenEndpoint}',
+      );
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'grant_type': AppConstants.authRefreshGrantType,
+          'refresh_token': refreshToken,
+          'client_id': AppConstants.authClientId,
+          'client_secret': AppConstants.authClientSecret,
+        },
+      );
+
+      return _handleResponse(response);
+    } on Failure {
+      rethrow;
+    } catch (e) {
+      throw NetworkFailure('Error de conexión: $e');
+    }
+  }
+
+  TokenResponse _handleResponse(http.Response response) {
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return TokenResponse.fromJson(json);
+    } else if (response.statusCode == 401) {
+      throw const ServerFailure('Usuario o contraseña incorrectos');
+    } else {
+      throw ServerFailure(
+        'Error del servidor: ${response.statusCode}',
+      );
     }
   }
 }

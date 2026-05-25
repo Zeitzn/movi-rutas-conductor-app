@@ -15,7 +15,7 @@ class AppConstants {
   static const String notificationChannelDescription =
       'Tracks your route in real-time';
 
-  static const String websocketUrl = 'ws://localhost:8080/channels';
+  static const String websocketUrl = 'ws://mr-ws.todoprogramacionapi.xyz/channels';
   static const int websocketReconnectDelay = 5000; // 5 seconds
   static const String websocketTopic = '/topic/channel/PE/AYAC/001';
   static const String websocketDestination = '/app/channel/PE/AYAC/001';
@@ -33,6 +33,7 @@ class AppConstants {
   static const String authClientId = '';
   static const String authClientSecret = '';
   static const String authGrantType = '';
+  static const String authRefreshGrantType = '';
 
   // UI constants
   static const double defaultPadding = 16.0;
