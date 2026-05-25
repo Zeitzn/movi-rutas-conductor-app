@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'core/constants/app_constants.dart';
+import 'core/services/background_communication_service.dart';
 
 import 'features/route_tracking/bloc/route_tracking_bloc.dart';
 import 'features/route_tracking/pages/route_tracking_page.dart';
@@ -18,7 +20,7 @@ import 'features/auth/pages/login_page.dart';
 import 'features/auth/repositories/auth_repository.dart';
 import 'features/auth/services/auth_service.dart';
 
-// WorkManager callback function
+// WorkManager callback function (fallback for periodic tasks)
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
@@ -32,7 +34,6 @@ void callbackDispatcher() {
       if (position != null) {
         await backgroundService.saveLocationPoint(position);
 
-        // Reusa WebSocketService (STOMP con reconexión) en vez de raw WebSocket
         final wsService = WebSocketService();
         await wsService.connect();
         await wsService.sendLocation(
@@ -40,7 +41,7 @@ void callbackDispatcher() {
           longitude: position.longitude,
           speed: position.speed,
           accuracy: position.accuracy,
-          timestamp: position.timestamp ?? DateTime.now(),
+          timestamp: position.timestamp,
         );
       }
 
@@ -53,6 +54,31 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize flutter_foreground_task for background location tracking
+  FlutterForegroundTask.init(
+    androidNotificationOptions: AndroidNotificationOptions(
+      channelId: 'route_tracking_channel',
+      channelName: 'Route Tracking',
+      channelDescription: 'Tracks your route in real-time',
+      onlyAlertOnce: true,
+    ),
+    iosNotificationOptions: const IOSNotificationOptions(
+      showNotification: false,
+      playSound: false,
+    ),
+    foregroundTaskOptions: ForegroundTaskOptions(
+      eventAction: ForegroundTaskEventAction.nothing(),
+      autoRunOnBoot: false,
+      allowWakeLock: true,
+      allowWifiLock: true,
+    ),
+  );
+
+  // Register callback for data coming from the foreground task isolate
+  FlutterForegroundTask.addTaskDataCallback(
+    BackgroundCommunicationService.onTaskData,
+  );
 
   await Workmanager().initialize(callbackDispatcher);
 

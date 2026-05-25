@@ -1,22 +1,23 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/services/background_communication_service.dart';
 import '../models/route.dart';
 import '../models/route_point.dart';
 import '../models/route_status.dart';
 import '../repositories/route_repository.dart';
 import '../services/location_service.dart';
-import '../services/background_location_service.dart';
-import '../services/websocket_service.dart';
+import '../services/background_tracking_handler.dart';
 import 'route_tracking_event.dart';
 import 'route_tracking_state.dart';
 
 class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
   final RouteRepository _routeRepository;
   final LocationService _locationService;
-  final WebSocketService _webSocketService = WebSocketService();
 
-  StreamSubscription<Position>? _locationSubscription;
+  StreamSubscription<Map<String, dynamic>>? _backgroundSubscription;
   Route? _currentRoute;
 
   RouteTrackingBloc({
@@ -58,32 +59,27 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
 
       _currentRoute = await _routeRepository.createRoute(newRoute);
 
-      // Iniciar notificación de foreground
-      await BackgroundLocationService.startForegroundNotification();
+      // Start foreground task: mantiene WebSocket + location stream + notificación
+      // aunque la app esté en background o la pantalla apagada
+      await FlutterForegroundTask.startService(
+        notificationTitle: AppConstants.appName,
+        notificationText: 'Ruta en curso — enviando ubicación',
+        callback: startCallback,
+      );
 
-      // Conectar al WebSocket
-      try {
-        await _webSocketService.connect();
-        await _webSocketService.subscribe();
-      } catch (e) {
-        print('WebSocket connection failed: $e');
-      }
-
-      // Start location tracking
-      _locationSubscription = _locationService.getLocationStream().listen(
-        (position) {
+      // Escuchar ubicaciones que vienen del foreground task
+      _backgroundSubscription =
+          BackgroundCommunicationService.locationStream.listen(
+        (data) {
           final routePoint = RoutePoint(
-            latitude: position.latitude,
-            longitude: position.longitude,
+            latitude: (data['latitude'] as num).toDouble(),
+            longitude: (data['longitude'] as num).toDouble(),
             timestamp: DateTime.now(),
-            speed: position.speed,
-            accuracy: position.accuracy,
-            altitude: position.altitude,
+            speed: (data['speed'] as num?)?.toDouble(),
+            accuracy: (data['accuracy'] as num?)?.toDouble(),
+            altitude: (data['altitude'] as num?)?.toDouble(),
           );
           add(UpdateLocation(routePoint));
-        },
-        onError: (error) {
-          emit(RouteTrackingError('Location tracking error: $error'));
         },
       );
 
@@ -103,8 +99,9 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
     }
 
     try {
-      await _locationSubscription?.cancel();
-      _locationSubscription = null;
+      // Avisar al foreground task que pause los envíos al WS
+      FlutterForegroundTask.sendDataToTask('pause');
+      // El task handler actualiza la notificación automáticamente
 
       final updatedRoute = _currentRoute!.copyWith(
         status: RouteStatus.paused,
@@ -112,11 +109,6 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       );
 
       _currentRoute = await _routeRepository.updateRoute(updatedRoute);
-      // Actualizar notificación de foreground
-      await BackgroundLocationService.updateNotificationStatus(
-        RouteStatus.paused,
-        _currentRoute!.points.length,
-      );
 
       emit(RouteTrackingPaused(_currentRoute!));
     } catch (e) {
@@ -134,23 +126,8 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
     }
 
     try {
-      // Restart location tracking
-      _locationSubscription = _locationService.getLocationStream().listen(
-        (position) {
-          final routePoint = RoutePoint(
-            latitude: position.latitude,
-            longitude: position.longitude,
-            timestamp: DateTime.now(),
-            speed: position.speed,
-            accuracy: position.accuracy,
-            altitude: position.altitude,
-          );
-          add(UpdateLocation(routePoint));
-        },
-        onError: (error) {
-          emit(RouteTrackingError('Location tracking error: $error'));
-        },
-      );
+      // Avisar al foreground task que reanude los envíos
+      FlutterForegroundTask.sendDataToTask('resume');
 
       final updatedRoute = _currentRoute!.copyWith(
         status: RouteStatus.inProgress,
@@ -173,8 +150,12 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
     }
 
     try {
-      await _locationSubscription?.cancel();
-      _locationSubscription = null;
+      // Cancel background data subscription
+      await _backgroundSubscription?.cancel();
+      _backgroundSubscription = null;
+
+      // Detener el foreground task (desconecta WS + cancela location stream)
+      await FlutterForegroundTask.stopService();
 
       final endTime = DateTime.now();
       final duration = endTime.difference(_currentRoute!.startTime).inSeconds;
@@ -186,11 +167,6 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       );
 
       _currentRoute = await _routeRepository.updateRoute(updatedRoute);
-      // Detener notificación de foreground
-      await BackgroundLocationService.stopForegroundNotification();
-
-      // Desconectar del WebSocket
-      await _webSocketService.disconnect();
 
       emit(RouteTrackingCompleted(_currentRoute!));
     } catch (e) {
@@ -231,23 +207,10 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
 
       _currentRoute = await _routeRepository.updateRoute(updatedRoute);
 
-      // Enviar ubicación al WebSocket
-      await _webSocketService.sendLocation(
-        latitude: event.routePoint.latitude,
-        longitude: event.routePoint.longitude,
-        speed: event.routePoint.speed ?? 0.0,
-        accuracy: event.routePoint.accuracy ?? 0.0,
-        timestamp: event.routePoint.timestamp,
-      );
+      // NOTA: el envío al WebSocket lo maneja el foreground task
+      // NOTA: la notificación la actualiza el BackgroundTrackingHandler
 
-      // Emit current state with updated route
       if (state is RouteTrackingInProgress) {
-        // Actualizar notificación con nuevo punto
-        await BackgroundLocationService.updateNotificationStatus(
-          RouteStatus.inProgress,
-          _currentRoute!.points.length,
-        );
-
         emit(RouteTrackingInProgress(_currentRoute!));
       }
     } catch (e) {
@@ -318,7 +281,7 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
 
   @override
   Future<void> close() {
-    _locationSubscription?.cancel();
+    _backgroundSubscription?.cancel();
     return super.close();
   }
 }
