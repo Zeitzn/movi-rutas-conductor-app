@@ -56,6 +56,26 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
 
       _currentRoute = await _routeRepository.createRoute(newRoute);
 
+      // Obtener ubicación actual inmediatamente para que el card
+      // "En curso" muestre el primer envío sin demora
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+
+      final initialPoint = RoutePoint(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        timestamp: DateTime.now(),
+        speed: position.speed,
+        accuracy: position.accuracy,
+        altitude: position.altitude,
+      );
+
+      _currentRoute = _currentRoute!.copyWith(points: [initialPoint]);
+      _currentRoute = await _routeRepository.updateRoute(_currentRoute!);
+
       // Start foreground task: mantiene WebSocket + location stream + notificación
       // aunque la app esté en background o la pantalla apagada
       await FlutterForegroundTask.startService(
