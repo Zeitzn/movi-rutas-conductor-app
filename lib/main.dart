@@ -9,6 +9,7 @@ import 'features/route_tracking/pages/route_tracking_page.dart';
 import 'features/route_tracking/repositories/route_repository.dart';
 import 'features/route_tracking/services/location_service.dart';
 import 'features/route_tracking/services/background_location_service.dart';
+import 'features/route_tracking/services/websocket_service.dart';
 
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/auth/bloc/auth_event.dart';
@@ -30,7 +31,17 @@ void callbackDispatcher() {
 
       if (position != null) {
         await backgroundService.saveLocationPoint(position);
-        await backgroundService.sendLocationToWebSocket(position);
+
+        // Reusa WebSocketService (STOMP con reconexión) en vez de raw WebSocket
+        final wsService = WebSocketService();
+        await wsService.connect();
+        await wsService.sendLocation(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          speed: position.speed,
+          accuracy: position.accuracy,
+          timestamp: position.timestamp ?? DateTime.now(),
+        );
       }
 
       return Future.value(true);

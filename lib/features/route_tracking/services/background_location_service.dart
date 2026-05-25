@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../models/route_point.dart';
 import '../models/route_status.dart';
@@ -80,36 +77,6 @@ class BackgroundLocationService {
       print('Background location saved: ${routePoint.toJson()}');
     } catch (e) {
       throw DatabaseFailure('Failed to save location point: $e');
-    }
-  }
-
-  Future<void> sendLocationToWebSocket(Position position) async {
-    try {
-      final locationData = {
-        'sender': AppConstants.websocketRemitente,
-        'numberPlate': 'ABC-123', // TODO: Obtener número de placa
-        'content':
-            'Coordenadas GPS: ${position.latitude}, ${position.longitude}',
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-        'timestamp': DateTime.now().toIso8601String(),
-        'speed': position.speed,
-        'accuracy': position.accuracy,
-      };
-
-      final channel = WebSocketChannel.connect(
-        Uri.parse(AppConstants.websocketUrl),
-      );
-
-      await channel.ready;
-
-      channel.sink.add(jsonEncode(locationData));
-
-      await channel.sink.close();
-
-      print('Location sent to WebSocket: $locationData');
-    } catch (e) {
-      print('Error sending location to WebSocket: $e');
     }
   }
 
