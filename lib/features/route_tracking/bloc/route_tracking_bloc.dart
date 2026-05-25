@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/errors/failures.dart';
 import '../../../core/services/background_communication_service.dart';
 import '../models/route.dart';
 import '../models/route_point.dart';
@@ -42,12 +43,8 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
     emit(const RouteTrackingLoading());
 
     try {
-      // Check permissions
-      final hasPermission = await _locationService.hasLocationPermission();
-      if (!hasPermission) {
-        emit(const RouteTrackingError('Location permissions are required'));
-        return;
-      }
+      // Check permissions — lanza PermissionFailure si falta algo
+      await _locationService.hasLocationPermission();
 
       // Create new route
       final newRoute = Route(
@@ -85,7 +82,8 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
 
       emit(RouteTrackingInProgress(_currentRoute!));
     } catch (e) {
-      emit(RouteTrackingError('Failed to start route: $e'));
+      final msg = e is Failure ? e.message : 'Error al iniciar la ruta';
+      emit(RouteTrackingError(msg));
     }
   }
 

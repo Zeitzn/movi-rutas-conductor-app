@@ -293,13 +293,11 @@ class RouteTrackingPage extends StatelessWidget {
                   icon: const Icon(Icons.refresh),
                   label: const Text('Reintentar'),
                 ),
-                if (state.message.contains('GPS') ||
-                    state.message.contains('disabled'))
-                  TextButton.icon(
-                    onPressed: () => _openLocationSettings(context),
-                    icon: const Icon(Icons.settings),
-                    label: const Text('Configurar'),
-                  ),
+                TextButton.icon(
+                  onPressed: () => _openLocationSettings(context),
+                  icon: const Icon(Icons.settings),
+                  label: const Text('Configurar'),
+                ),
               ],
             ),
           ],
@@ -311,7 +309,7 @@ class RouteTrackingPage extends StatelessWidget {
   String _getErrorMessage(String message) {
     if (message.contains('GPS') || message.contains('disabled')) {
       return 'GPS Desactivado';
-    } else if (message.contains('permission')) {
+    } else if (message.contains('Permiso') || message.contains('permission')) {
       return 'Permisos Requeridos';
     } else {
       return 'Error';
@@ -323,6 +321,9 @@ class RouteTrackingPage extends StatelessWidget {
       return 'El GPS está desactivado. Actívalo para usar el seguimiento de rutas.';
     } else if (message.contains('permission')) {
       return 'La aplicación necesita permisos de ubicación para funcionar correctamente.';
+    } else if (message.contains('todo el tiempo') ||
+        message.contains('Allow all')) {
+      return message;
     } else {
       return message;
     }
