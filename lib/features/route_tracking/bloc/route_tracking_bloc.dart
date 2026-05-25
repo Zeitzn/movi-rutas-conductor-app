@@ -165,8 +165,9 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       );
 
       _currentRoute = await _routeRepository.updateRoute(updatedRoute);
+      _currentRoute = null;
 
-      emit(RouteTrackingCompleted(_currentRoute!));
+      emit(const RouteTrackingInitial());
     } catch (e) {
       emit(RouteTrackingError('Failed to end route: $e'));
     }

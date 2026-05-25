@@ -50,8 +50,6 @@ class RouteTrackingPage extends StatelessWidget {
       return _buildInProgressState(context, state);
     } else if (state is RouteTrackingPaused) {
       return _buildPausedState(context, state);
-    } else if (state is RouteTrackingCompleted) {
-      return _buildCompletedState(context, state);
     } else if (state is RouteTrackingLoaded) {
       return _buildLoadedState(context, state);
     } else if (state is RouteTrackingError) {
@@ -122,22 +120,83 @@ class RouteTrackingPage extends StatelessWidget {
     RouteTrackingInProgress state,
   ) {
     final route = state.currentRoute;
+    final lastPoint = route.points.isNotEmpty ? route.points.last : null;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStatusCard(
-            context,
-            'Ruta en Progreso',
-            Colors.green,
-            Icons.directions_car,
+          // Último envío — fecha y hora bien visible
+          Card(
+            elevation: AppConstants.cardElevation,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.circle, size: 12, color: Colors.green.shade700),
+                      const SizedBox(width: 8),
+                      Text(
+                        'EN CURSO',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Colors.green.shade700,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Último envío',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    lastPoint != null
+                        ? '${_formatTime(lastPoint.timestamp)}'
+                        : '--:--:--',
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (lastPoint != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatDate(lastPoint.timestamp),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  if (lastPoint != null) ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                      ),
+                      child: Text(
+                        '${lastPoint.latitude.toStringAsFixed(6)}, ${lastPoint.longitude.toStringAsFixed(6)}',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
-          _buildRouteStatsCard(context, route),
-          const SizedBox(height: 16),
-          _buildRecentLocationsCard(context, route.points),
           const SizedBox(height: 24),
+          // Botones de acción
           Row(
             children: [
               Expanded(
@@ -171,7 +230,6 @@ class RouteTrackingPage extends StatelessWidget {
   }
 
   Widget _buildPausedState(BuildContext context, RouteTrackingPaused state) {
-    final route = state.currentRoute;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.defaultPadding),
       child: Column(
@@ -183,8 +241,6 @@ class RouteTrackingPage extends StatelessWidget {
             Colors.orange,
             Icons.pause_circle,
           ),
-          const SizedBox(height: 16),
-          _buildRouteStatsCard(context, route),
           const SizedBox(height: 24),
           Row(
             children: [
@@ -212,44 +268,6 @@ class RouteTrackingPage extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompletedState(
-    BuildContext context,
-    RouteTrackingCompleted state,
-  ) {
-    final route = state.completedRoute;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatusCard(
-            context,
-            'Ruta Completada',
-            Colors.blue,
-            Icons.check_circle,
-          ),
-          const SizedBox(height: 16),
-          _buildRouteStatsCard(context, route),
-          const SizedBox(height: 16),
-          _buildRecentLocationsCard(context, route.points),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _startNewRoute(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Iniciar Nueva Ruta'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                textStyle: const TextStyle(fontSize: 18),
-              ),
-            ),
           ),
         ],
       ),
@@ -362,8 +380,6 @@ class RouteTrackingPage extends StatelessWidget {
             Icons.info,
           ),
           const SizedBox(height: 16),
-          _buildRouteStatsCard(context, route),
-          const SizedBox(height: 16),
           _buildRecentLocationsCard(context, route.points),
         ],
       ),
@@ -394,84 +410,6 @@ class RouteTrackingPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildRouteStatsCard(BuildContext context, dynamic route) {
-    return Card(
-      elevation: AppConstants.cardElevation,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Estadísticas', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    context,
-                    'Tiempo',
-                    _formatDuration(route.duration),
-                    Icons.access_time,
-                  ),
-                ),
-                Expanded(
-                  child: _buildStatItem(
-                    context,
-                    'Distancia',
-                    '${route.totalDistance.toStringAsFixed(2)} m',
-                    Icons.straighten,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    context,
-                    'Puntos',
-                    '${route.points.length}',
-                    Icons.location_on,
-                  ),
-                ),
-                Expanded(
-                  child: _buildStatItem(
-                    context,
-                    'Estado',
-                    route.status.displayName,
-                    Icons.info_outline,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    return Column(
-      children: [
-        Icon(icon, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
-      ],
     );
   }
 
@@ -535,21 +473,15 @@ class RouteTrackingPage extends StatelessWidget {
     context.read<RouteTrackingBloc>().add(const EndRoute());
   }
 
-  String _formatDuration(int seconds) {
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    final secs = seconds % 60;
+  String _formatTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
+  }
 
-    if (hours > 0) {
-      return '${hours}h ${minutes}m ${secs}s';
-    } else if (minutes > 0) {
-      return '${minutes}m ${secs}s';
-    } else {
-      return '${secs}s';
-    }
+  String _formatDate(DateTime dateTime) {
+    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
   }
 
   String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
+    return _formatTime(dateTime);
   }
 }
