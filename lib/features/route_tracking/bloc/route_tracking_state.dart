@@ -35,15 +35,6 @@ class RouteTrackingPaused extends RouteTrackingState {
   List<Object?> get props => [currentRoute];
 }
 
-class RouteTrackingCompleted extends RouteTrackingState {
-  final Route completedRoute;
-
-  const RouteTrackingCompleted(this.completedRoute);
-
-  @override
-  List<Object?> get props => [completedRoute];
-}
-
 class RouteTrackingLoaded extends RouteTrackingState {
   final Route route;
 

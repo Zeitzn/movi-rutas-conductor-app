@@ -47,6 +47,3 @@ class LoadRoute extends RouteTrackingEvent {
   List<Object?> get props => [routeId];
 }
 
-class RefreshRouteStatus extends RouteTrackingEvent {
-  const RefreshRouteStatus();
-}

@@ -1,16 +1,10 @@
 import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/errors/failures.dart';
 import '../models/route_point.dart';
-import '../models/route_status.dart';
 
 class BackgroundLocationService {
-  static const MethodChannel _channel = MethodChannel(
-    'com.example.movi_rutas_example/notifications',
-  );
-
   Future<void> initializeBackgroundTask() async {
     try {
       await _requestBackgroundPermissions();
@@ -77,36 +71,6 @@ class BackgroundLocationService {
       print('Background location saved: ${routePoint.toJson()}');
     } catch (e) {
       throw DatabaseFailure('Failed to save location point: $e');
-    }
-  }
-
-  static Future<void> updateNotificationStatus(
-    RouteStatus status,
-    int pointsCount,
-  ) async {
-    try {
-      await _channel.invokeMethod('updateNotification', {
-        'status': status.name,
-        'pointsCount': pointsCount,
-      });
-    } catch (e) {
-      print('Error updating notification: $e');
-    }
-  }
-
-  static Future<void> stopForegroundNotification() async {
-    try {
-      await _channel.invokeMethod('stopNotification');
-    } catch (e) {
-      print('Error stopping notification: $e');
-    }
-  }
-
-  static Future<void> startForegroundNotification() async {
-    try {
-      await _channel.invokeMethod('startNotification');
-    } catch (e) {
-      print('Error starting notification: $e');
     }
   }
 }

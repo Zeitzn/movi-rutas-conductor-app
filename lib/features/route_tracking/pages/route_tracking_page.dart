@@ -156,7 +156,7 @@ class RouteTrackingPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     lastPoint != null
-                        ? '${_formatTime(lastPoint.timestamp)}'
+                        ? _formatTime(lastPoint.timestamp)
                         : '--:--:--',
                     style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.bold,

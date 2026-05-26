@@ -36,6 +36,3 @@ class ServerFailure extends Failure {
   const ServerFailure(super.message);
 }
 
-class UnknownFailure extends Failure {
-  const UnknownFailure(super.message);
-}
