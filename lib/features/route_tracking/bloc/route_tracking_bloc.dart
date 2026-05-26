@@ -19,6 +19,7 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
   final LocationService _locationService;
 
   StreamSubscription<Map<String, dynamic>>? _backgroundSubscription;
+  StreamSubscription<Position>? _locationSubscription;
   Route? _currentRoute;
 
   RouteTrackingBloc({
@@ -67,7 +68,7 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       final initialPoint = RoutePoint(
         latitude: position.latitude,
         longitude: position.longitude,
-        timestamp: DateTime.now(),
+        timestamp: position.timestamp,
         speed: position.speed,
         accuracy: position.accuracy,
         altitude: position.altitude,
@@ -84,14 +85,23 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
         callback: startCallback,
       );
 
-      // Escuchar ubicaciones que vienen del foreground task
+      // Emitir ANTES de suscribirse a los streams para evitar el race condition:
+      // si una ubicación llega antes del emit, el guard "state is RouteTrackingInProgress"
+      // en _onUpdateLocation fallaría y la actualización se perdería.
+      emit(RouteTrackingInProgress(_currentRoute!));
+
+      // Fuente 1 (principal): ubicaciones que vienen del foreground task via
+      // sendDataToMain → BackgroundCommunicationService. Se actualiza CADA
+      // VEZ que el background task envía ubicación al WebSocket.
       _backgroundSubscription =
           BackgroundCommunicationService.locationStream.listen(
         (data) {
           final routePoint = RoutePoint(
             latitude: (data['latitude'] as num).toDouble(),
             longitude: (data['longitude'] as num).toDouble(),
-            timestamp: DateTime.now(),
+            timestamp: data['timestamp'] != null
+                ? DateTime.parse(data['timestamp'] as String)
+                : DateTime.now(),
             speed: (data['speed'] as num?)?.toDouble(),
             accuracy: (data['accuracy'] as num?)?.toDouble(),
             altitude: (data['altitude'] as num?)?.toDouble(),
@@ -100,7 +110,22 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
         },
       );
 
-      emit(RouteTrackingInProgress(_currentRoute!));
+      // Fuente 2 (fallback): stream de ubicación directo desde el main isolate.
+      // Si el puente sendDataToMain falla, el stream local garantiza que la UI
+      // se actualice. La deduplicación en _onUpdateLocation evita puntos dobles.
+      _locationSubscription = _locationService.getLocationStream().listen(
+        (position) {
+          final routePoint = RoutePoint(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            timestamp: position.timestamp,
+            speed: position.speed,
+            accuracy: position.accuracy,
+            altitude: position.altitude,
+          );
+          add(UpdateLocation(routePoint));
+        },
+      );
     } catch (e) {
       final msg = e is Failure ? e.message : 'Error al iniciar la ruta';
       emit(RouteTrackingError(msg));
@@ -168,9 +193,11 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
     }
 
     try {
-      // Cancel background data subscription
+      // Cancel all subscriptions
       await _backgroundSubscription?.cancel();
       _backgroundSubscription = null;
+      await _locationSubscription?.cancel();
+      _locationSubscription = null;
 
       // Detener el foreground task (desconecta WS + cancela location stream)
       await FlutterForegroundTask.stopService();
@@ -202,6 +229,19 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       return;
     }
 
+    // Deduplicación: si el timestamp del nuevo punto está a menos de 500ms
+    // del último punto registrado, es el mismo fix GPS llegando desde dos
+    // streams (background task + main isolate). Lo ignoramos.
+    if (_currentRoute!.points.isNotEmpty) {
+      final lastTs = _currentRoute!.points.last.timestamp;
+      if (event.routePoint.timestamp
+          .difference(lastTs)
+          .inMilliseconds
+          .abs() < 500) {
+        return;
+      }
+    }
+
     try {
       final updatedPoints = List<RoutePoint>.from(_currentRoute!.points)
         ..add(event.routePoint);
@@ -229,9 +269,7 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       // NOTA: el envío al WebSocket lo maneja el foreground task
       // NOTA: la notificación la actualiza el BackgroundTrackingHandler
 
-      if (state is RouteTrackingInProgress) {
-        emit(RouteTrackingInProgress(_currentRoute!));
-      }
+      emit(RouteTrackingInProgress(_currentRoute!));
     } catch (e) {
       emit(RouteTrackingError('Failed to update location: $e'));
     }
@@ -301,6 +339,7 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
   @override
   Future<void> close() {
     _backgroundSubscription?.cancel();
+    _locationSubscription?.cancel();
     return super.close();
   }
 }

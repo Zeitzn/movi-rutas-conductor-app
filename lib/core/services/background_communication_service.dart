@@ -18,12 +18,23 @@ class BackgroundCommunicationService {
   /// Called from main.dart when the foreground task sends data.
   static void onTaskData(Object data) {
     try {
-      final json = jsonDecode(data as String) as Map<String, dynamic>;
+      // En flutter_foreground_task v8, el dato puede llegar como String
+      // o ya decodificado como Map según la versión del platform channel.
+      final Map<String, dynamic> json;
+      if (data is String) {
+        json = jsonDecode(data) as Map<String, dynamic>;
+      } else if (data is Map) {
+        json = Map<String, dynamic>.from(data);
+      } else {
+        print('⚠️ onTaskData: unexpected data type ${data.runtimeType}');
+        return;
+      }
+
       if (json['type'] == 'location') {
         _locationController.add(json);
       }
-    } catch (_) {
-      // Ignore malformed data
+    } catch (e) {
+      print('⚠️ onTaskData error: $e — data: $data');
     }
   }
 
