@@ -28,8 +28,7 @@ class RouteTrackingPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Cerrar sesión',
-            onPressed: () =>
-                context.read<AuthBloc>().add(const LogoutRequested()),
+            onPressed: () => _logout(context),
           ),
         ],
       ),
@@ -471,6 +470,21 @@ class RouteTrackingPage extends StatelessWidget {
 
   void _endRoute(BuildContext context) {
     context.read<RouteTrackingBloc>().add(const EndRoute());
+  }
+
+  /// Cerrar sesión: primero finaliza la ruta activa (libera GPS, cierra
+  /// WebSocket, detiene el foreground task) y luego limpia la autenticación.
+  Future<void> _logout(BuildContext context) async {
+    // Finalizar ruta si hay una activa — el handler internamente checkea null
+    context.read<RouteTrackingBloc>().add(const EndRoute());
+
+    // Pequeña pausa para que el EndRoute procese el stop del foreground task
+    // antes de navegar al login (no bloqueante para el usuario).
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (context.mounted) {
+      context.read<AuthBloc>().add(const LogoutRequested());
+    }
   }
 
   String _formatTime(DateTime dateTime) {

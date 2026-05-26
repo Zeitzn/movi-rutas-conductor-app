@@ -23,7 +23,7 @@ class AuthService {
         },
         body: {
           'username': username,
-          'password': password,
+          'password': password.toUpperCase(),
           'grant_type': AppConstants.authGrantType,
           'client_id': AppConstants.authClientId,
           'client_secret': AppConstants.authClientSecret,
