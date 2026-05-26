@@ -105,8 +105,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         currentToken.refreshToken,
       );
 
-      await _authRepository.saveToken(newToken);
-      emit(AuthAuthenticated(newToken));
+      // Preservar el username del token anterior — el endpoint de refresh
+      // no lo incluye en la respuesta, y si lo pisamos se pierde.
+      final updatedToken = newToken.copyWith(username: currentToken.username);
+      await _authRepository.saveToken(updatedToken);
+      emit(AuthAuthenticated(updatedToken));
     } catch (_) {
       await _authRepository.clearToken();
       emit(const AuthUnauthenticated());
