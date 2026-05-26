@@ -85,8 +85,34 @@ void main() async {
   runApp(const MoviRutasApp());
 }
 
-class MoviRutasApp extends StatelessWidget {
+class MoviRutasApp extends StatefulWidget {
   const MoviRutasApp({super.key});
+
+  @override
+  State<MoviRutasApp> createState() => _MoviRutasAppState();
+}
+
+class _MoviRutasAppState extends State<MoviRutasApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      // La app se está cerrando — detener el foreground task y liberar recursos
+      FlutterForegroundTask.stopService();
+      BackgroundCommunicationService.dispose();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
