@@ -15,7 +15,7 @@ class AppConstants {
   static const String notificationChannelDescription =
       'Tracks your route in real-time';
 
-  static const String websocketUrl = 'ws://mr-ws.todoprogramacionapi.xyz/channels';
+  static const String websocketUrl = 'ws://mr.dev.todoprogramacionapi.xyz/channels';
   static const int websocketReconnectDelay = 5000; // 5 seconds
   static const String websocketTopic = '/topic/channel/PE/AYAC/001';
   static const String websocketDestination = '/app/channel/PE/AYAC/001';
@@ -28,12 +28,12 @@ class AppConstants {
   static const String settingsBoxName = 'settings';
 
   // Auth settings
-  static const String authHost = '';
-  static const String authTokenEndpoint = '';
-  static const String authClientId = '';
-  static const String authClientSecret = '';
-  static const String authGrantType = '';
-  static const String authRefreshGrantType = '';
+  static const String authHost = 'https://keycloak.todoprogramacionapi.xyz/realms/movi-rutas-prod/protocol/openid-connect';
+  static const String authTokenEndpoint = '/token';
+  static const String authClientId = 'movi-rutas-core-api-rest-client';
+  static const String authClientSecret = 'BWwkPsHgu4pcLhjEmqq4J775Tkp1hnKS';
+  static const String authGrantType = 'password';
+  static const String authRefreshGrantType = 'refresh_token';
 
   // UI constants
   static const double defaultPadding = 16.0;
