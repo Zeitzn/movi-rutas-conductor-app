@@ -7,6 +7,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/services/background_communication_service.dart';
 import '../../../core/services/env_config.dart';
+import '../../auth/repositories/auth_repository.dart';
 import '../models/route.dart';
 import '../models/route_point.dart';
 import '../models/route_status.dart';
@@ -19,6 +20,7 @@ import 'route_tracking_state.dart';
 class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
   final RouteRepository _routeRepository;
   final LocationService _locationService;
+  final IAuthRepository _authRepository;
 
   StreamSubscription<Map<String, dynamic>>? _backgroundSubscription;
   StreamSubscription<Position>? _locationSubscription;
@@ -27,8 +29,10 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
   RouteTrackingBloc({
     required RouteRepository routeRepository,
     required LocationService locationService,
+    required IAuthRepository authRepository,
   }) : _routeRepository = routeRepository,
        _locationService = locationService,
+       _authRepository = authRepository,
        super(const RouteTrackingInitial()) {
     on<StartRoute>(_onStartRoute);
     on<PauseRoute>(_onPauseRoute);
@@ -85,12 +89,15 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
         callback: startCallback,
       );
 
-      // Send numberPlate to the background isolate before any location data
+      // Send numberPlate and companyUuid to the background isolate before any location data
       final numberPlate = EnvConfig.instance.numberPlate;
+      final profile = await _authRepository.getProfile();
+      final companyUuid = profile?.companyUuid ?? '';
       FlutterForegroundTask.sendDataToTask(
         jsonEncode({
           'type': 'config',
           'numberPlate': numberPlate,
+          'companyUuid': companyUuid,
         }),
       );
 

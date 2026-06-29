@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -19,6 +21,7 @@ import 'features/route_tracking/services/websocket_service.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/auth/bloc/auth_event.dart';
 import 'features/auth/bloc/auth_state.dart';
+import 'features/auth/models/user_profile.dart';
 import 'features/auth/pages/login_page.dart';
 import 'features/auth/repositories/auth_repository.dart';
 import 'features/auth/services/auth_service.dart';
@@ -39,7 +42,22 @@ void callbackDispatcher() {
 
         final prefs = await SharedPreferences.getInstance();
         final numberPlate = prefs.getString('numberPlate') ?? '';
-        final wsService = WebSocketService(numberPlate: numberPlate);
+        final profileJson = prefs.getString('auth_profile');
+        String companyUuid = '';
+        if (profileJson != null) {
+          try {
+            final profile = UserProfile.fromJson(
+              jsonDecode(profileJson) as Map<String, dynamic>,
+            );
+            companyUuid = profile.companyUuid;
+          } catch (_) {
+            debugPrint('❌ callbackDispatcher: failed to parse auth_profile');
+          }
+        }
+        final wsService = WebSocketService(
+          numberPlate: numberPlate,
+          companyUuid: companyUuid,
+        );
         await wsService.connect();
         await wsService.sendLocation(RoutePoint(
           latitude: position.latitude,
@@ -145,6 +163,7 @@ class _MoviRutasAppState extends State<MoviRutasApp> with WidgetsBindingObserver
             create: (context) => RouteTrackingBloc(
               routeRepository: context.read<RouteRepository>(),
               locationService: context.read<LocationService>(),
+              authRepository: context.read<IAuthRepository>(),
             ),
           ),
           BlocProvider<AuthBloc>(

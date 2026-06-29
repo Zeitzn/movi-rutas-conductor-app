@@ -17,9 +17,6 @@ class AppConstants {
 
   static const String websocketUrl = 'ws://mr.dev.todoprogramacionapi.xyz/channels';
   static const int websocketReconnectDelay = 5000; // 5 seconds
-  static const String websocketTopic = '/topic/channel/PE/AYAC/001';
-  static const String websocketDestination = '/app/channel/PE/AYAC/001';
-
   // WebSocket message format for GPS coordinates
   static const String websocketRemitente = 'conductor_app';
 

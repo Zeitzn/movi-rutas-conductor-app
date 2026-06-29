@@ -18,13 +18,14 @@ class BackgroundTrackingHandler extends TaskHandler {
   StreamSubscription<Position>? _locationSubscription;
   bool _paused = false;
   String _numberPlate = '';
+  String _companyUuid = '';
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    // Connect STOMP WebSocket for real-time location sending
-    _webSocketService = WebSocketService(numberPlate: _numberPlate);
-    await _webSocketService!.connect();
-    await _webSocketService!.subscribe();
+    // WebSocket connection is deferred until config (numberPlate + companyUuid)
+    // arrives via onReceiveData. Location streaming starts immediately.
+    // Locations that arrive before WS connects are sent to the main isolate
+    // via sendDataToMain; WS-bound messages queue up in WebSocketService.
 
     // Start location streaming in the background
     _locationSubscription = Geolocator.getPositionStream(
@@ -123,10 +124,37 @@ class BackgroundTrackingHandler extends TaskHandler {
   }
 
   void _handleConfigData(Map<String, dynamic> config) {
-    if (config['type'] == 'config' && config['numberPlate'] != null) {
-      _numberPlate = config['numberPlate'] as String;
-      debugPrint('📋 Background handler received numberPlate: $_numberPlate');
+    if (config['type'] == 'config') {
+      if (config['numberPlate'] != null) {
+        _numberPlate = config['numberPlate'] as String;
+      }
+      if (config['companyUuid'] != null) {
+        _companyUuid = config['companyUuid'] as String;
+      }
+      debugPrint('📋 Background handler received config: numberPlate=$_numberPlate, companyUuid=$_companyUuid');
+
+      // Defer WebSocket connection until we have both config values.
+      // This avoids the race where onStart() runs before config arrives.
+      if (_companyUuid.isNotEmpty) {
+        _connectWebSocket();
+      } else {
+        debugPrint('⚠️ Background handler: companyUuid empty, WS connection deferred');
+      }
     }
+  }
+
+  Future<void> _connectWebSocket() async {
+    if (_webSocketService != null) {
+      debugPrint('📋 Background handler: WS already connected, skipping');
+      return;
+    }
+
+    _webSocketService = WebSocketService(
+      numberPlate: _numberPlate,
+      companyUuid: _companyUuid,
+    );
+    await _webSocketService!.connect();
+    await _webSocketService!.subscribe();
   }
 }
 

@@ -8,18 +8,31 @@ import '../models/route_point.dart';
 
 class WebSocketService {
   final String numberPlate;
+  final String companyUuid;
   StompClient? _stompClient;
   bool _isConnected = false;
   final List<Map<String, dynamic>> _messageQueue = [];
   // ignore: unused_field — preserved for future connect/disconnect notification sounds
   final FlutterRingtonePlayer _ringtonePlayer = FlutterRingtonePlayer();
 
-  WebSocketService({this.numberPlate = ''});
+  WebSocketService({this.numberPlate = '', this.companyUuid = ''});
+
+  /// STOMP topic derived from [companyUuid].
+  /// Package-visible for testability.
+  String get topic => '/topic/channel/PE/AYAC/$companyUuid';
+
+  /// STOMP destination derived from [companyUuid].
+  /// Package-visible for testability.
+  String get destination => '/app/channel/PE/AYAC/$companyUuid';
 
   bool get isConnected => _isConnected;
 
   Future<void> connect() async {
     if (_isConnected) return;
+    if (companyUuid.isEmpty) {
+      debugPrint('❌ WebSocketService: companyUuid is empty — skipping connection');
+      return;
+    }
 
     try {
       _stompClient = StompClient(
@@ -71,19 +84,21 @@ class WebSocketService {
   }
 
   Future<void> subscribe() async {
-    if (_stompClient == null || !_isConnected) {
-      debugPrint('Cannot subscribe: STOMP client not connected');
+    if (_stompClient == null) {
+      debugPrint('❌ Cannot subscribe: STOMP client not initialized');
       return;
     }
+    // stomp_dart_client queues subscribe frames internally
+    // and sends them when STOMP CONNECTED arrives. No _isConnected
+    // check needed here (was preventing subscribe on slow connections).
 
+    debugPrint('🔔 Subscribing to topic: $topic');
     _stompClient!.subscribe(
-      destination: AppConstants.websocketTopic,
+      destination: topic,
       callback: (StompFrame frame) {
-        debugPrint('📩 Received: ${frame.body}');
+        debugPrint('📩 Received on $topic: ${frame.body}');
       },
     );
-
-    debugPrint('👂 Subscribed to ${AppConstants.websocketTopic}');
   }
 
   Future<void> sendLocation(RoutePoint point) async {
@@ -98,7 +113,7 @@ class WebSocketService {
     if (_isConnected && _stompClient != null) {
       try {
         _stompClient!.send(
-          destination: AppConstants.websocketDestination,
+          destination: destination,
           body: jsonEncode(message),
           headers: {'content-type': 'application/json'},
         );
@@ -119,7 +134,7 @@ class WebSocketService {
     for (final message in _messageQueue) {
       try {
         _stompClient!.send(
-          destination: AppConstants.websocketDestination,
+          destination: destination,
           body: jsonEncode(message),
           headers: {'content-type': 'application/json'},
         );
