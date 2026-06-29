@@ -11,6 +11,7 @@ import 'features/route_tracking/pages/route_tracking_page.dart';
 import 'features/route_tracking/repositories/route_repository.dart';
 import 'features/route_tracking/services/location_service.dart';
 import 'features/route_tracking/services/background_location_service.dart';
+import 'features/route_tracking/models/route_point.dart';
 import 'features/route_tracking/services/websocket_service.dart';
 
 import 'features/auth/bloc/auth_bloc.dart';
@@ -36,13 +37,13 @@ void callbackDispatcher() {
 
         final wsService = WebSocketService();
         await wsService.connect();
-        await wsService.sendLocation(
+        await wsService.sendLocation(RoutePoint(
           latitude: position.latitude,
           longitude: position.longitude,
+          timestamp: position.timestamp,
           speed: position.speed,
           accuracy: position.accuracy,
-          timestamp: position.timestamp,
-        );
+        ));
       }
 
       return Future.value(true);

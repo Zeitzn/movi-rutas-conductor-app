@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 import '../../../core/constants/app_constants.dart';
+import '../models/route_point.dart';
 
 class WebSocketService {
   StompClient? _stompClient;
@@ -82,23 +83,13 @@ class WebSocketService {
     debugPrint('👂 Subscribed to ${AppConstants.websocketTopic}');
   }
 
-  Future<void> sendLocation({
-    required double latitude,
-    required double longitude,
-    required double speed,
-    required double accuracy,
-    DateTime? timestamp,
-  }) async {
+  Future<void> sendLocation(RoutePoint point) async {
     final message = {
+      ...point.toJson(),
       'sender': AppConstants.websocketRemitente,
         'numberPlate': 'ABC-123',// TODO: Obtener número de placa
         'content':
-            'Coordenadas GPS: ${latitude}, ${longitude}',
-        'latitude': latitude,
-        'longitude': longitude,
-        'timestamp': DateTime.now().toIso8601String(),
-        'speed': speed,
-        'accuracy': accuracy,
+            'Coordenadas GPS: ${point.latitude}, ${point.longitude}',
     };
 
     if (_isConnected && _stompClient != null) {

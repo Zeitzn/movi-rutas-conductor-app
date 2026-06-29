@@ -94,16 +94,7 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       _backgroundSubscription =
           BackgroundCommunicationService.locationStream.listen(
         (data) {
-          final routePoint = RoutePoint(
-            latitude: (data['latitude'] as num).toDouble(),
-            longitude: (data['longitude'] as num).toDouble(),
-            timestamp: data['timestamp'] != null
-                ? DateTime.parse(data['timestamp'] as String)
-                : DateTime.now(),
-            speed: (data['speed'] as num?)?.toDouble(),
-            accuracy: (data['accuracy'] as num?)?.toDouble(),
-            altitude: (data['altitude'] as num?)?.toDouble(),
-          );
+          final routePoint = RoutePoint.fromJson(data);
           add(UpdateLocation(routePoint));
         },
       );
@@ -113,14 +104,14 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       // se actualice. La deduplicación en _onUpdateLocation evita puntos dobles.
       _locationSubscription = _locationService.getLocationStream().listen(
         (position) {
-          final routePoint = RoutePoint(
-            latitude: position.latitude,
-            longitude: position.longitude,
-            timestamp: position.timestamp,
-            speed: position.speed,
-            accuracy: position.accuracy,
-            altitude: position.altitude,
-          );
+          final routePoint = RoutePoint.fromJson({
+            'latitude': position.latitude,
+            'longitude': position.longitude,
+            'timestamp': position.timestamp.toIso8601String(),
+            'speed': position.speed,
+            'accuracy': position.accuracy,
+            'altitude': position.altitude,
+          });
           add(UpdateLocation(routePoint));
         },
       );
