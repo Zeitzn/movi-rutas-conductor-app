@@ -33,7 +33,6 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
     on<ResumeRoute>(_onResumeRoute);
     on<EndRoute>(_onEndRoute);
     on<UpdateLocation>(_onUpdateLocation);
-    on<LoadRoute>(_onLoadRoute);
   }
 
   Future<void> _onStartRoute(
@@ -271,25 +270,6 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
       emit(RouteTrackingInProgress(_currentRoute!));
     } catch (e) {
       emit(RouteTrackingError('Failed to update location: $e'));
-    }
-  }
-
-  Future<void> _onLoadRoute(
-    LoadRoute event,
-    Emitter<RouteTrackingState> emit,
-  ) async {
-    emit(const RouteTrackingLoading());
-
-    try {
-      final route = await _routeRepository.getRouteById(event.routeId);
-      if (route != null) {
-        _currentRoute = route;
-        emit(RouteTrackingLoaded(route));
-      } else {
-        emit(RouteTrackingError('Route not found: ${event.routeId}'));
-      }
-    } catch (e) {
-      emit(RouteTrackingError('Failed to load route: $e'));
     }
   }
 

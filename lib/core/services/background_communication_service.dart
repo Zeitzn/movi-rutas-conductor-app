@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 
 /// Bridge between the main isolate and the foreground task isolate.
 ///
@@ -26,7 +27,7 @@ class BackgroundCommunicationService {
       } else if (data is Map) {
         json = Map<String, dynamic>.from(data);
       } else {
-        print('⚠️ onTaskData: unexpected data type ${data.runtimeType}');
+        debugPrint('⚠️ onTaskData: unexpected data type ${data.runtimeType}');
         return;
       }
 
@@ -34,7 +35,7 @@ class BackgroundCommunicationService {
         _locationController.add(json);
       }
     } catch (e) {
-      print('⚠️ onTaskData error: $e — data: $data');
+      debugPrint('⚠️ onTaskData error: $e — data: $data');
     }
   }
 

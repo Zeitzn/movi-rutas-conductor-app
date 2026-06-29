@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/errors/failures.dart';
@@ -68,7 +69,7 @@ class BackgroundLocationService {
         altitude: position.altitude,
       );
 
-      print('Background location saved: ${routePoint.toJson()}');
+      debugPrint('Background location saved: ${routePoint.toJson()}');
     } catch (e) {
       throw DatabaseFailure('Failed to save location point: $e');
     }

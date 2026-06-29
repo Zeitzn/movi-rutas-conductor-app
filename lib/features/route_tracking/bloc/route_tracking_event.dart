@@ -38,12 +38,3 @@ class UpdateLocation extends RouteTrackingEvent {
   List<Object?> get props => [routePoint];
 }
 
-class LoadRoute extends RouteTrackingEvent {
-  final String routeId;
-
-  const LoadRoute(this.routeId);
-
-  @override
-  List<Object?> get props => [routeId];
-}
-

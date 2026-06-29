@@ -49,8 +49,6 @@ class RouteTrackingPage extends StatelessWidget {
       return _buildInProgressState(context, state);
     } else if (state is RouteTrackingPaused) {
       return _buildPausedState(context, state);
-    } else if (state is RouteTrackingLoaded) {
-      return _buildLoadedState(context, state);
     } else if (state is RouteTrackingError) {
       return _buildErrorState(context, state);
     } else {
@@ -273,10 +271,6 @@ class RouteTrackingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadedState(BuildContext context, RouteTrackingLoaded state) {
-    return _buildRouteDetails(context, state.route);
-  }
-
   Widget _buildErrorState(BuildContext context, RouteTrackingError state) {
     return Center(
       child: Padding(
@@ -366,25 +360,6 @@ class RouteTrackingPage extends StatelessWidget {
     }
   }
 
-  Widget _buildRouteDetails(BuildContext context, dynamic route) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConstants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatusCard(
-            context,
-            'Detalles de Ruta',
-            Theme.of(context).colorScheme.primary,
-            Icons.info,
-          ),
-          const SizedBox(height: 16),
-          _buildRecentLocationsCard(context, route.points),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStatusCard(
     BuildContext context,
     String title,
@@ -406,50 +381,6 @@ class RouteTrackingPage extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentLocationsCard(BuildContext context, List points) {
-    final recentPoints = points.length > 5
-        ? points.reversed.take(5).toList()
-        : points.reversed.toList();
-
-    return Card(
-      elevation: AppConstants.cardElevation,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Ubicaciones Recientes',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            if (points.isEmpty)
-              const Text('No hay puntos de ubicación registrados')
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: recentPoints.length,
-                itemBuilder: (context, index) {
-                  final point = recentPoints[index];
-                  return ListTile(
-                    leading: const Icon(Icons.location_on),
-                    title: Text(
-                      '${point.latitude.toStringAsFixed(6)}, ${point.longitude.toStringAsFixed(6)}',
-                    ),
-                    subtitle: Text(_formatDateTime(point.timestamp)),
-                    trailing: point.speed != null
-                        ? Text('${point.speed!.toStringAsFixed(1)} m/s')
-                        : null,
-                  );
-                },
-              ),
           ],
         ),
       ),
@@ -495,7 +426,4 @@ class RouteTrackingPage extends StatelessWidget {
     return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    return _formatTime(dateTime);
-  }
 }

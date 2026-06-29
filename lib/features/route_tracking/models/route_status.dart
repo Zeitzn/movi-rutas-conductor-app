@@ -2,8 +2,7 @@ enum RouteStatus {
   initial,
   inProgress,
   paused,
-  completed,
-  cancelled;
+  completed;
 
   String get displayName {
     switch (this) {
@@ -15,8 +14,6 @@ enum RouteStatus {
         return 'Pausada';
       case RouteStatus.completed:
         return 'Completada';
-      case RouteStatus.cancelled:
-        return 'Cancelada';
     }
   }
 }
