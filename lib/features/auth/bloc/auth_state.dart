@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../models/token_response.dart';
+import '../models/user_profile.dart';
 
 abstract class AuthState extends Equatable {
   const AuthState();
@@ -19,11 +20,12 @@ class AuthLoading extends AuthState {
 
 class AuthAuthenticated extends AuthState {
   final TokenResponse token;
+  final UserProfile? profile;
 
-  const AuthAuthenticated(this.token);
+  const AuthAuthenticated(this.token, {this.profile});
 
   @override
-  List<Object?> get props => [token];
+  List<Object?> get props => [token, profile];
 }
 
 class AuthUnauthenticated extends AuthState {

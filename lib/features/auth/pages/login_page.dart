@@ -96,7 +96,7 @@ class _LoginFormState extends State<_LoginForm> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ingresá tus credenciales para continuar',
+                  'Ingresa tus credenciales para continuar',
                   style: Theme.of(context).textTheme.bodyLarge,
                   textAlign: TextAlign.center,
                 ),
@@ -112,7 +112,7 @@ class _LoginFormState extends State<_LoginForm> {
                   textInputAction: TextInputAction.next,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Ingresá tu usuario';
+                      return 'Ingresa tu usuario';
                     }
                     return null;
                   },
@@ -141,7 +141,7 @@ class _LoginFormState extends State<_LoginForm> {
                   onFieldSubmitted: isLoading ? null : (_) => _onLoginPressed(),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Ingresá tu contraseña';
+                      return 'Ingresa tu contraseña';
                     }
                     return null;
                   },

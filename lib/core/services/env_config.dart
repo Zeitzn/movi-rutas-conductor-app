@@ -1,6 +1,8 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../errors/failures.dart';
+
 /// Centralized typed configuration service.
 ///
 /// Loads configuration from:
@@ -58,5 +60,16 @@ class EnvConfig {
   /// A Settings UI for numberPlate input is tracked separately.
   String get numberPlate {
     return _prefs?.getString('numberPlate') ?? '';
+  }
+
+  /// Profiles API base URL from `.env`.
+  ///
+  /// Used to fetch driver profile after login.
+  String get profilesApiBaseUrl {
+    final url = dotenv.env['PROFILES_API_BASE_URL'] ?? 'http://localhost:8080';
+    if (url.isEmpty) {
+      throw const ServerFailure('PROFILES_API_BASE_URL is not set in .env');
+    }
+    return url;
   }
 }

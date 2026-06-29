@@ -1,11 +1,13 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/services/env_config.dart';
 import '../models/token_response.dart';
+import '../models/user_profile.dart';
 
 class AuthService {
   Future<TokenResponse> login({
@@ -63,6 +65,46 @@ class AuthService {
       rethrow;
     } catch (e) {
       throw NetworkFailure('Error de conexión: $e');
+    }
+  }
+
+  Future<UserProfile> fetchProfile({
+    required String username,
+    required String accessToken,
+  }) async {
+    try {
+      final uri = Uri.parse(
+        '${EnvConfig.instance.profilesApiBaseUrl}/api/profiles?username=$username',
+      );
+
+      debugPrint('Fetching profile for $username from $uri');
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      return _handleProfileResponse(response);
+    } on Failure {
+      rethrow;
+    } catch (e) {
+      debugPrint('Error fetching profile: $e');
+      throw NetworkFailure('Error al obtener perfil: $e');
+    }
+  }
+
+  UserProfile _handleProfileResponse(http.Response response) {
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = json['data'] as Map<String, dynamic>;
+      return UserProfile.fromJson(data);
+    } else {
+      throw ServerFailure(
+        'Error del servidor: ${response.statusCode}',
+      );
     }
   }
 

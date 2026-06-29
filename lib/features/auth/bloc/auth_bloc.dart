@@ -63,9 +63,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         password: event.password,
       );
 
-      final tokenWithUser = token.copyWith(username: event.username);
+      final tokenWithUser = token.copyWith(
+        username: event.username.toUpperCase(),
+      );
+
+      // FETCH PRIMERO — si falla, nada se persiste
+      final profile = await _authService.fetchProfile(
+        username: event.username.toUpperCase(),
+        accessToken: tokenWithUser.accessToken,
+      );
+
+      // SÓLO SI EL FETCH FUE EXITOSO
       await _authRepository.saveToken(tokenWithUser);
-      emit(AuthAuthenticated(tokenWithUser));
+      await _authRepository.saveProfile(profile);
+      emit(AuthAuthenticated(tokenWithUser, profile: profile));
     } catch (e) {
       final message = e.toString().replaceFirst('Exception: ', '');
       emit(AuthError(message));
@@ -83,7 +94,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(const AuthUnauthenticated());
         return;
       }
-      emit(AuthAuthenticated(token));
+
+      final profile = await _authRepository.getProfile();
+      if (profile == null) {
+        // Token huérfano sin profile — limpiar y tratar como no autenticado
+        await _authRepository.clearToken();
+        emit(const AuthUnauthenticated());
+        return;
+      }
+
+      emit(AuthAuthenticated(token, profile: profile));
     } catch (_) {
       emit(const AuthUnauthenticated());
     }
@@ -109,7 +129,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // no lo incluye en la respuesta, y si lo pisamos se pierde.
       final updatedToken = newToken.copyWith(username: currentToken.username);
       await _authRepository.saveToken(updatedToken);
-      emit(AuthAuthenticated(updatedToken));
+
+      final profile = await _authRepository.getProfile();
+      emit(AuthAuthenticated(updatedToken, profile: profile));
     } catch (_) {
       await _authRepository.clearToken();
       emit(const AuthUnauthenticated());
