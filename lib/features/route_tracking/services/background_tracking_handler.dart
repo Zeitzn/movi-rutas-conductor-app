@@ -154,7 +154,6 @@ class BackgroundTrackingHandler extends TaskHandler {
       companyUuid: _companyUuid,
     );
     await _webSocketService!.connect();
-    await _webSocketService!.subscribe();
   }
 }
 

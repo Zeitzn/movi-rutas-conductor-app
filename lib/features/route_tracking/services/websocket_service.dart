@@ -83,24 +83,6 @@ class WebSocketService {
     }
   }
 
-  Future<void> subscribe() async {
-    if (_stompClient == null) {
-      debugPrint('❌ Cannot subscribe: STOMP client not initialized');
-      return;
-    }
-    // stomp_dart_client queues subscribe frames internally
-    // and sends them when STOMP CONNECTED arrives. No _isConnected
-    // check needed here (was preventing subscribe on slow connections).
-
-    debugPrint('🔔 Subscribing to topic: $topic');
-    _stompClient!.subscribe(
-      destination: topic,
-      callback: (StompFrame frame) {
-        debugPrint('📩 Received on $topic: ${frame.body}');
-      },
-    );
-  }
-
   Future<void> sendLocation(RoutePoint point) async {
     final message = {
       ...point.toJson(),
