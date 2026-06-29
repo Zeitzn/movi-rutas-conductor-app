@@ -35,3 +35,4 @@ No filesystem delta specs to merge (all artifacts lived in Engram).
 
 1. **Race condition**: `BackgroundTrackingHandler.onStart()` runs before config arrives. Fix: defer `WebSocketService` creation to `_handleConfigData()`.
 2. **Subscribe guard removed**: Removed `_isConnected` check from `subscribe()` — stomp_dart_client already queues frames internally.
+3. **numberPlate now comes from profile username**: `EnvConfig.instance.numberPlate` siempre devolvía `''` porque nunca se escribía en SharedPrefs. Ahora `numberPlate` se lee del `username` del perfil del conductor (`profile?.username`), que es el mismo valor que se muestra en el appbar. Afecta `RouteTrackingBloc` y `callbackDispatcher`.

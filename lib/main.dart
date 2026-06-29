@@ -41,14 +41,15 @@ void callbackDispatcher() {
         await backgroundService.saveLocationPoint(position);
 
         final prefs = await SharedPreferences.getInstance();
-        final numberPlate = prefs.getString('numberPlate') ?? '';
         final profileJson = prefs.getString('auth_profile');
+        String numberPlate = '';
         String companyUuid = '';
         if (profileJson != null) {
           try {
             final profile = UserProfile.fromJson(
               jsonDecode(profileJson) as Map<String, dynamic>,
             );
+            numberPlate = profile.username;
             companyUuid = profile.companyUuid;
           } catch (_) {
             debugPrint('❌ callbackDispatcher: failed to parse auth_profile');

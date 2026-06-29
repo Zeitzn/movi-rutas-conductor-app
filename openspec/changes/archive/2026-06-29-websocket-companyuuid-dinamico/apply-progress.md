@@ -2,7 +2,7 @@
 
 ## Implementation Summary
 
-Replaced hardcoded `/AYAC/001` in STOMP routes with dynamic `companyUuid` from `UserProfile`, so each driver publishes to their own channel.
+Replaced hardcoded `/AYAC/001` in STOMP routes with dynamic `companyUuid` from `UserProfile`, so each driver publishes to their own channel. `numberPlate` field in WebSocket messages now uses `profile.username` (the driver's username shown in the appbar).
 
 ## Completed Tasks
 
@@ -31,8 +31,8 @@ Replaced hardcoded `/AYAC/001` in STOMP routes with dynamic `companyUuid` from `
 | `lib/core/constants/app_constants.dart` | Modified | Removed `websocketTopic`, `websocketDestination` |
 | `lib/features/route_tracking/services/websocket_service.dart` | Modified | Added `companyUuid` param, `topic`/`destination` getters, empty guard |
 | `lib/features/route_tracking/services/background_tracking_handler.dart` | Modified | Added `_companyUuid`, config extraction, both params in constructor |
-| `lib/features/route_tracking/bloc/route_tracking_bloc.dart` | Modified | Injected `IAuthRepository`, `companyUuid` in config message |
-| `lib/main.dart` | Modified | BLoC gets `IAuthRepository`, callbackDispatcher reads profile |
+| `lib/features/route_tracking/bloc/route_tracking_bloc.dart` | Modified | Injected `IAuthRepository`, `companyUuid` in config message, `numberPlate` from `profile.username` |
+| `lib/main.dart` | Modified | BLoC gets `IAuthRepository`, callbackDispatcher reads `numberPlate` + `companyUuid` from profile |
 | `test/features/route_tracking/services/websocket_service_test.dart` | Created | 5 unit tests for dynamic routing |
 
 ## Data Flow
@@ -45,13 +45,13 @@ Login → SharedPrefsAuthRepository.saveProfile(UserProfile)
                RouteTrackingBloc          callbackDispatcher
                (vía IAuthRepository)      (WorkManager)
                       │                         │
-               jsonEncode({                  prefs.getString(
-                 'type': 'config',             'auth_profile')
-                 'numberPlate': ...,         jsonDecode → companyUuid
-                 'companyUuid': ...           │
-               })                             ▼
-                      │               WebSocketService(
-                   sendDataToTask        companyUuid: x
+                jsonEncode({                  prefs.getString(
+                  'type': 'config',             'auth_profile')
+                  'numberPlate': username,   jsonDecode → username + companyUuid
+                  'companyUuid': ...           │
+                })                             ▼
+                       │               WebSocketService(
+                    sendDataToTask        numberPlate: username,
                       │                 )
                       ▼
          BackgroundTrackingHandler

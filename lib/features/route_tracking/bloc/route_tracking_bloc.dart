@@ -6,7 +6,6 @@ import 'dart:convert';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/services/background_communication_service.dart';
-import '../../../core/services/env_config.dart';
 import '../../auth/repositories/auth_repository.dart';
 import '../models/route.dart';
 import '../models/route_point.dart';
@@ -89,9 +88,9 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
         callback: startCallback,
       );
 
-      // Send numberPlate and companyUuid to the background isolate before any location data
-      final numberPlate = EnvConfig.instance.numberPlate;
+      // Send numberPlate (username) and companyUuid to the background isolate before any location data
       final profile = await _authRepository.getProfile();
+      final numberPlate = profile?.username ?? '';
       final companyUuid = profile?.companyUuid ?? '';
       FlutterForegroundTask.sendDataToTask(
         jsonEncode({
