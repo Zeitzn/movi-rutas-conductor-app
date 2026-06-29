@@ -17,6 +17,7 @@ Replaced hardcoded `/AYAC/001` in STOMP routes with dynamic `companyUuid` from `
 - [x] 3.3 Inject `IAuthRepository` into RouteTrackingBloc
 - [x] 3.4 Include `companyUuid` in config message sent to background isolate
 - [x] 3.5 callbackDispatcher reads `auth_profile` from SharedPrefs, extracts `companyUuid`
+- [x] 3.6 Removed `subscribe()` — app is emitter-only, no longer receives WS messages
 - [x] 4.1-4.2 Unit tests for topic/destination getters (5 tests)
 - [x] 4.5 flutter analyze: 0 issues | flutter test: 9/9 pass
 
@@ -29,8 +30,8 @@ Replaced hardcoded `/AYAC/001` in STOMP routes with dynamic `companyUuid` from `
 | File | Action | Description |
 |------|--------|-------------|
 | `lib/core/constants/app_constants.dart` | Modified | Removed `websocketTopic`, `websocketDestination` |
-| `lib/features/route_tracking/services/websocket_service.dart` | Modified | Added `companyUuid` param, `topic`/`destination` getters, empty guard |
-| `lib/features/route_tracking/services/background_tracking_handler.dart` | Modified | Added `_companyUuid`, config extraction, both params in constructor |
+| `lib/features/route_tracking/services/websocket_service.dart` | Modified | Added `companyUuid` param, `topic`/`destination` getters, empty guard, removed `subscribe()` method |
+| `lib/features/route_tracking/services/background_tracking_handler.dart` | Modified | Added `_companyUuid`, config extraction, both params in constructor, removed `subscribe()` call |
 | `lib/features/route_tracking/bloc/route_tracking_bloc.dart` | Modified | Injected `IAuthRepository`, `companyUuid` in config message, `numberPlate` from `profile.username` |
 | `lib/main.dart` | Modified | BLoC gets `IAuthRepository`, callbackDispatcher reads `numberPlate` + `companyUuid` from profile |
 | `test/features/route_tracking/services/websocket_service_test.dart` | Created | 5 unit tests for dynamic routing |
