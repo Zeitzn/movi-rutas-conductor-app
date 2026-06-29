@@ -6,7 +6,7 @@ Flutter 3.38.4 app for drivers: GPS route tracking with WebSocket STOMP publishi
 
 - All Flutter commands use **`fvm flutter ...`** (FVM manages the pinned SDK version)
 - `fvm flutter analyze` — static analysis (flutter_lints recommended set, no custom rules)
-- `fvm flutter test` — run tests (currently just a placeholder, no real tests exist)
+- `fvm flutter test` — run tests (2 unit tests exist, in `test/features/route_tracking/models/`; `test/widget_test.dart` still a TODO placeholder)
 - `fvm flutter run -d linux` — desktop dev (fastest iteration)
 - `fvm flutter build apk --debug` — APK build
 - NDK corruption fix: `rm -rf $ANDROID_HOME/ndk/27.0.12077973 && fvm flutter clean && fvm flutter pub get`
@@ -28,9 +28,10 @@ Shared under `lib/core/`: `constants/ errors/ services/`
 
 - **Dual location sources**: BLoC listens to BOTH `BackgroundCommunicationService.locationStream` (from background isolate) AND `LocationService.getLocationStream()` (main isolate), deduplicating by timestamp < 500ms
 - **`BackgroundCommunicationService`** is a static singleton (not injectable) — pragmatic because Flutter foreground task callbacks can't receive DI. Untestable by design.
-- **`WebSocketService`** hardcodes `numberPlate: 'ABC-123'` with a TODO
+- **`WebSocketService`** now takes `numberPlate` as constructor parameter (read from SharedPrefs via `EnvConfig`). The old hardcoded `'ABC-123'` is gone.
 - **`InMemoryRouteRepository`** is a placeholder — no real persistence. Auth persistence IS real (`SharedPrefsAuthRepository` with in-memory cache).
 - **Auth**: `password.toUpperCase()` transformation required by legacy Keycloak backend. Token auto-refresh scheduled at 80% of token lifetime.
+- **`client_secret`** moved to `.env` via `flutter_dotenv` + `EnvConfig` singleton. PKCE migration is pending for real security.
 - **Background isolate**: `BackgroundTrackingHandler` runs in a SEPARATE isolate. Communicates via `FlutterForegroundTask.sendDataToMain()`. Cannot access BLoC or `BackgroundCommunicationService` directly.
 - STOMP WebSocket URL and credentials are hardcoded in `lib/core/constants/app_constants.dart` (not env vars).
 
@@ -45,8 +46,9 @@ Shared under `lib/core/`: `constants/ errors/ services/`
 
 ## Testing
 
-- Only `test/widget_test.dart` exists — a TODO placeholder
-- No unit, widget, or integration tests written yet
+- 2 unit tests in `test/features/route_tracking/models/` (RoutePoint JSON roundtrip)
+- `test/widget_test.dart` still a TODO placeholder
+- No widget or integration tests
 - Stack: `flutter_test` only. Files: `_test.dart` suffix, per feature
 
 ## WebSocket / STOMP
@@ -60,6 +62,6 @@ Shared under `lib/core/`: `constants/ errors/ services/`
 
 - Android API 29+, NDK 27.0.12077973, JDK 17+
 - No `.env` files tracked. `.env.local` for local overrides (in `.gitignore`)
-- All config lives in `AppConstants` (hardcoded)
+- Config split: `AppConstants` (hardcoded constants), `EnvConfig` (`.env` secrets + SharedPrefs runtime config)
 - AI agent prompts in `ai/` dir: publisher and subscriber templates
 - Architecture standards in `docs/estandares/` (10 files: bloc, testing, estilo, etc.)
