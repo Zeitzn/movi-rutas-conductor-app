@@ -1,4 +1,4 @@
-package com.example.movi_rutas_example
+package com.movi.rutas.conductor
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -23,11 +23,11 @@ class LocationForegroundService : Service(), MethodCallHandler {
         private const val NOTIFICATION_CHANNEL_ID = "location_tracking_channel"
         private const val NOTIFICATION_CHANNEL_NAME = "Seguimiento de Ruta"
         private const val NOTIFICATION_ID = 1001
-        private const val METHOD_CHANNEL_NAME = "com.example.movi_rutas_example/notifications"
+        private const val METHOD_CHANNEL_NAME = "com.movi.rutas.conductor/notifications"
         
         // Actions for notification
-        private const val ACTION_STOP_TRACKING = "com.example.movi_rutas_example.STOP_TRACKING"
-        private const val ACTION_OPEN_APP = "com.example.movi_rutas_example.OPEN_APP"
+        private const val ACTION_STOP_TRACKING = "com.movi.rutas.conductor.STOP_TRACKING"
+        private const val ACTION_OPEN_APP = "com.movi.rutas.conductor.OPEN_APP"
     }
 
     private var notificationManager: NotificationManagerCompat? = null

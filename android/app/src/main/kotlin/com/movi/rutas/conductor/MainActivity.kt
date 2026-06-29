@@ -1,4 +1,4 @@
-package com.example.movi_rutas_example
+package com.movi.rutas.conductor
 
 import io.flutter.embedding.android.FlutterActivity
 

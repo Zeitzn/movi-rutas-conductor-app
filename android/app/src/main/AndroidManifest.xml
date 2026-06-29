@@ -13,7 +13,7 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
-        android:label="movi_rutas_example"
+        android:label="Movi Conductor"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -56,7 +56,7 @@
             android:enabled="true"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.example.movi_rutas_example.STOP_TRACKING" />
+                <action android:name="com.movi.rutas.conductor.STOP_TRACKING" />
             </intent-filter>
         </receiver>
 
