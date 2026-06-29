@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:convert';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/services/background_communication_service.dart';
+import '../../../core/services/env_config.dart';
 import '../models/route.dart';
 import '../models/route_point.dart';
 import '../models/route_status.dart';
@@ -81,6 +83,15 @@ class RouteTrackingBloc extends Bloc<RouteTrackingEvent, RouteTrackingState> {
         notificationTitle: AppConstants.appName,
         notificationText: 'Ruta en curso — enviando ubicación',
         callback: startCallback,
+      );
+
+      // Send numberPlate to the background isolate before any location data
+      final numberPlate = EnvConfig.instance.numberPlate;
+      FlutterForegroundTask.sendDataToTask(
+        jsonEncode({
+          'type': 'config',
+          'numberPlate': numberPlate,
+        }),
       );
 
       // Emitir ANTES de suscribirse a los streams para evitar el race condition:

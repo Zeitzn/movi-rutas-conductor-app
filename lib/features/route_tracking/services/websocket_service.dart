@@ -7,11 +7,14 @@ import '../../../core/constants/app_constants.dart';
 import '../models/route_point.dart';
 
 class WebSocketService {
+  final String numberPlate;
   StompClient? _stompClient;
   bool _isConnected = false;
   final List<Map<String, dynamic>> _messageQueue = [];
   // ignore: unused_field — preserved for future connect/disconnect notification sounds
   final FlutterRingtonePlayer _ringtonePlayer = FlutterRingtonePlayer();
+
+  WebSocketService({this.numberPlate = ''});
 
   bool get isConnected => _isConnected;
 
@@ -87,9 +90,9 @@ class WebSocketService {
     final message = {
       ...point.toJson(),
       'sender': AppConstants.websocketRemitente,
-        'numberPlate': 'ABC-123',// TODO: Obtener número de placa
-        'content':
-            'Coordenadas GPS: ${point.latitude}, ${point.longitude}',
+      'numberPlate': numberPlate,
+      'content':
+          'Coordenadas GPS: ${point.latitude}, ${point.longitude}',
     };
 
     if (_isConnected && _stompClient != null) {

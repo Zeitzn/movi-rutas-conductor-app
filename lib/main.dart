@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/services/background_communication_service.dart';
+import 'core/services/env_config.dart';
 
 import 'features/route_tracking/bloc/route_tracking_bloc.dart';
 import 'features/route_tracking/pages/route_tracking_page.dart';
@@ -35,7 +37,9 @@ void callbackDispatcher() {
       if (position != null) {
         await backgroundService.saveLocationPoint(position);
 
-        final wsService = WebSocketService();
+        final prefs = await SharedPreferences.getInstance();
+        final numberPlate = prefs.getString('numberPlate') ?? '';
+        final wsService = WebSocketService(numberPlate: numberPlate);
         await wsService.connect();
         await wsService.sendLocation(RoutePoint(
           latitude: position.latitude,
@@ -55,6 +59,9 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize EnvConfig (dotenv + SharedPreferences)
+  await EnvConfig.init();
 
   // Initialize flutter_foreground_task for background location tracking
   FlutterForegroundTask.init(

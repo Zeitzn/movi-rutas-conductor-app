@@ -46,3 +46,6 @@ app.*.map.json
 
 *.html
 /ai/*
+
+# Environment secrets (not tracked)
+.env

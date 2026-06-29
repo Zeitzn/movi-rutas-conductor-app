@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -16,11 +17,12 @@ class BackgroundTrackingHandler extends TaskHandler {
   WebSocketService? _webSocketService;
   StreamSubscription<Position>? _locationSubscription;
   bool _paused = false;
+  String _numberPlate = '';
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     // Connect STOMP WebSocket for real-time location sending
-    _webSocketService = WebSocketService();
+    _webSocketService = WebSocketService(numberPlate: _numberPlate);
     await _webSocketService!.connect();
     await _webSocketService!.subscribe();
 
@@ -91,18 +93,39 @@ class BackgroundTrackingHandler extends TaskHandler {
 
   @override
   void onReceiveData(Object data) {
-    if (data == 'pause') {
-      _paused = true;
-      FlutterForegroundTask.updateService(
-        notificationTitle: 'Ruta pausada',
-        notificationText: 'Envíos de ubicación detenidos',
-      );
-    } else if (data == 'resume') {
-      _paused = false;
-      FlutterForegroundTask.updateService(
-        notificationTitle: 'Ruta en curso',
-        notificationText: 'Enviando ubicación',
-      );
+    if (data is String) {
+      if (data == 'pause') {
+        _paused = true;
+        FlutterForegroundTask.updateService(
+          notificationTitle: 'Ruta pausada',
+          notificationText: 'Envíos de ubicación detenidos',
+        );
+        return;
+      } else if (data == 'resume') {
+        _paused = false;
+        FlutterForegroundTask.updateService(
+          notificationTitle: 'Ruta en curso',
+          notificationText: 'Enviando ubicación',
+        );
+        return;
+      }
+
+      // Try parsing as JSON config
+      try {
+        final decoded = jsonDecode(data) as Map<String, dynamic>;
+        _handleConfigData(decoded);
+      } catch (_) {
+        // Not JSON, ignore
+      }
+    } else if (data is Map) {
+      _handleConfigData(Map<String, dynamic>.from(data));
+    }
+  }
+
+  void _handleConfigData(Map<String, dynamic> config) {
+    if (config['type'] == 'config' && config['numberPlate'] != null) {
+      _numberPlate = config['numberPlate'] as String;
+      debugPrint('📋 Background handler received numberPlate: $_numberPlate');
     }
   }
 }

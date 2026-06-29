@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
+import '../../../core/services/env_config.dart';
 import '../models/token_response.dart';
 
 class AuthService {
@@ -26,7 +27,7 @@ class AuthService {
           'password': password.toUpperCase(),
           'grant_type': AppConstants.authGrantType,
           'client_id': AppConstants.authClientId,
-          'client_secret': AppConstants.authClientSecret,
+          'client_secret': EnvConfig.instance.authClientSecret,
         },
       );
 
@@ -53,7 +54,7 @@ class AuthService {
           'grant_type': AppConstants.authRefreshGrantType,
           'refresh_token': refreshToken,
           'client_id': AppConstants.authClientId,
-          'client_secret': AppConstants.authClientSecret,
+          'client_secret': EnvConfig.instance.authClientSecret,
         },
       );
 

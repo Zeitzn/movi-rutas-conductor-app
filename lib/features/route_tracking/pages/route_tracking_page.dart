@@ -388,7 +388,11 @@ class RouteTrackingPage extends StatelessWidget {
   }
 
   Future<void> _startNewRoute(BuildContext context) async {
-    context.read<RouteTrackingBloc>().add(const StartRoute('driver_001'));
+    final authState = context.read<AuthBloc>().state;
+    final driverId = authState is AuthAuthenticated
+        ? (authState.token.username ?? 'unknown')
+        : 'unknown';
+    context.read<RouteTrackingBloc>().add(StartRoute(driverId));
   }
 
   void _pauseRoute(BuildContext context) {
